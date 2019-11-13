@@ -18,7 +18,7 @@ def sync_position(calculated_position: Position, current_step: int) -> Position:
     #until we have tower communication we can ignore correction.
     if calculated_position is None:
         # can just say car is exactly at tower, not realistic but reasonable for testing.
-        calculated_position = Position(0,0,0)
+        calculated_position = Position(0,0)
     return calculated_position 
 
 
@@ -58,7 +58,8 @@ def load_points_for_drawing_MOCK(drawing_ID, step_ID=None):
     yield from all_steps[step_ID:]
 
 
-def get_lines_of_drawing(drawing_ID, step_ID=None):
+def get_lines_of_drawing(drawing_ID, step_ID=None)
+     -> Generator[Tuple[int,Iterator[Tuple[int,Tuple[float,float]]]],None,None]:
     """generates a sequence of iterators in the following manner:
     for line_num, line_iter in get_lines_of_drawing(0):
         for step, (x,y) in line_iter:

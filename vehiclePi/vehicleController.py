@@ -31,7 +31,7 @@ contains methods to move the motors in order to move the car."""
         """
         self.position = sync_position(self.position, current_step)
         
-    def move(self, instruction):
+    def move(self, instruction: MOVE):
         self._fail_if_not_initialized()
         if instruction is MOVE.F:
             #TODO: send arduino command

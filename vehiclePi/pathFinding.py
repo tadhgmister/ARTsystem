@@ -25,7 +25,8 @@ def move_to_point(curPos: Position, targetX: float, targetY: float) -> Generator
     needed_facing = math.atan2(tary - cury, tarx - curx)
     #TODO: SHOULD CONSIDER WRAP AROUND FOR ANGLES, WON'T TURN OPTIMAL DIRECTION THIS WAY
     steps_to_turn = (needed_facing - curfacing) // Vehicle.WHEEL_TURN_INCREMENT
-    yield from itertools.repeat(MOVE.R if steps_to_turn < 0 else MOVE.L, int(abs(steps_to_turn)))
+    dir_to_turn = MOVE.R if steps_to_turn < 0 else MOVE.L
+    yield from itertools.repeat(dir_to_turn, int(abs(steps_to_turn)))
     curfacing += steps_to_turn * Vehicle.WHEEL_TURN_INCREMENT
 
     #we are now within one turn increment from the direction we need to move
@@ -33,7 +34,7 @@ def move_to_point(curPos: Position, targetX: float, targetY: float) -> Generator
     steps_to_move = pol_dist(tarx-curx, tary-cury) // Vehicle.WHEEL_STEP_INCREMENT
     yield from itertools.repeat(MOVE.F, int(steps_to_move))
 
-def move_along_line(controller: Vehicle, iter_pos: Iterator[Tuple[int,Position]]):
+def move_along_line(controller: Vehicle, iter_pos: Iterator[Tuple[int,Tuple[float,float]]):
     """moves car along the line"""
     for step, (tarx, tary) in iter_pos:
         for instruction in move_to_point(controller.position, tarx, tary):
