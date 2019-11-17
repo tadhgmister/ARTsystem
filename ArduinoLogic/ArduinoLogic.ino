@@ -3,18 +3,19 @@
 * then send a singe byte serial message saying it's ready for the next message.
 * 
 * Version 1.1: added switch statement to avoid an avalanche of "if()"s
+* Version 1.2: minor updates, initialized readyToMove to 'true' to avoid duplicate 
+*   print statements
 * 
 * Author:  Scott Malonda 
-* Version 1.1
-* Date: Nov 15, 2019
+* Version 1.2
+* Date: Nov 16, 2019
 */
 
-boolean readyToMove = false;
+boolean readyToMove = true;
 int instruction = -2;     // Initializing to a number that instruction should never be set to again
 
 void setup() {
   Serial.begin(9600);   // Should be the baud rate of the Pi
-  boolean readyToMove = true;
   Serial.setTimeout(6000);  // Setting a 1-min timeout for serial stuff just in case
 }
 
