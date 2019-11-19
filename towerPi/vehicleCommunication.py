@@ -7,6 +7,8 @@ Date: Nov 18, 2019
 """
 
 import socket
+from ImgProcessing import ImgProc
+from databaseStub import dataStub
 from towerCommon import OPCODE
 
 
@@ -36,32 +38,31 @@ def reply(server: socket, addr, message):
     server.sendto(bytearray(message), addr)
 
 
-def getPosition():
+def getPosition(camera):
     """
     Gets the position of the vehicle in the format (X, Y, Angle)
 
     Returns the x,y coordinates of the vehicle and its angle from the positive x axis
     """
-    # TODO: import the image processing and camera access code
+    # TODO: Add log() fuction
     # Contact the camera to get the current position.
-    x = 0
-    y = 0
-    angle = 0
+    position = camera.getPos() # Gets the position from an ImgProc object
+    database.log()
    
-    return x, y, angle
+    return position
 
 
-def getNext(drawingID, step = 0):
+def getNext(database, drawingID, step = 0):
     """
     Gets the next position in the drawing pattern from the database
     - drawingID is the ID of the currently tracked drawing
     - step is the stepID of the next step in the drawing
 
-    Returns a list of nested tuples (step, lineID, (x,y))
+    Returns a nested list of points in the format [step, lineID, [x,y]]
     """
     lines = []
     # TODO: add database access to get the drawing info
-    # Appends a tuple to lines for each line in the step
+    # Figure out what format to use.  Nested lists aren't playing nice
     return lines
 
 
@@ -72,6 +73,9 @@ serverIP = 'localhost'
 serverPort = 1000
 server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 server.bind((serverIP, serverPort))
+# Creating the camera and database objects
+cameraSensor = ImgProc()
+database = dataStub()
 
 while True:
     # Blocks while listening for a message.  Once received it identifies the request type,
@@ -106,6 +110,8 @@ while True:
         if not(data[1]==drawingID):
             message = [ERROR, "drawingID does not match tracked drawing"]
             reply(server, addr, message)
+        lines = getNext(database, data[1], data[2])
+        message = [NEXTPOS, lines]
 
     # Clearing variable to avoid reusing data from the last message (redundant)
     data = None
