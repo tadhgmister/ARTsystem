@@ -38,21 +38,19 @@ def reply(server: socket, addr, message):
     server.sendto(bytearray(message), addr)
 
 
-def getPosition(camera):
+def getPosition(camera: ImgProc, database: dataStub):
     """
-    Gets the position of the vehicle in the format (X, Y, Angle)
+    Gets the position of the vehicle from the camera in the format (X, Y, Angle)
 
     Returns the x,y coordinates of the vehicle and its angle from the positive x axis
     """
-    # TODO: Add log() fuction
-    # Contact the camera to get the current position.
     position = camera.getPos() # Gets the position from an ImgProc object
-    database.log()
+    database.log(position)
    
     return position
 
 
-def getNext(database, drawingID, step = 0):
+def getNext(database: dataStub, drawingID, step = 0):
     """
     Gets the next position in the drawing pattern from the database
     - drawingID is the ID of the currently tracked drawing
@@ -62,7 +60,7 @@ def getNext(database, drawingID, step = 0):
     """
     lines = []
     # TODO: add database access to get the drawing info
-    # Figure out what format to use.  Nested lists aren't playing nice
+    # TODO: Figure out what format to use.  Nested lists aren't playing nice
     return lines
 
 
@@ -89,20 +87,18 @@ while True:
         reply(server, addr, message)
 
     elif(data[0]==TRACK):
-        if(drawingID==0):
+        if(drawingID!=0):
             message = [ERROR, "Already tracking a drawing"]
             reply(server, addr, message)
         else:
             imageID = data[1]
             drawingID = getDrawing(imageID)
             tracking = True
-            # TODO: send a message to the camera to turn on?
             message = [ACK]
             reply(server, addr, message)
 
     elif(data[0]==POSITION):
-        # If the request has a step number, pass it as an argument to getPosition()
-        x, y, angle = getPosition()
+        x, y, angle = getPosition(cameraSensor, database)
         message = [POSITION, x, y, angle]
         reply(server, addr, message)
 
