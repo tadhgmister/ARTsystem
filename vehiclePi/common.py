@@ -3,6 +3,7 @@ import math
 from enum import Enum
 
 class MOVE(Enum):
+    """movement commands sent to arduino to move the motors one step."""
     F = "Forward" #both wheels forward
     R = "Turn right in place" #left wheel forward, right wheel back
     L = "Turn left in place" #right wheel forward, left wheel back
@@ -15,7 +16,7 @@ class MOVE(Enum):
 
 
 class Position:
-    """position of the car"""
+    """position of the car - coordinates and facing direction"""
     __slots__ = ["x","y","facing"]
     x: float
     "x position of car relative to tower in mm"
