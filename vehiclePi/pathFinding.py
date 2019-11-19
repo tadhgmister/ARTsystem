@@ -34,7 +34,7 @@ def move_to_point(curPos: Position, targetX: float, targetY: float) -> Generator
     steps_to_move = pol_dist(tarx-curx, tary-cury) // Vehicle.WHEEL_STEP_INCREMENT
     yield from itertools.repeat(MOVE.F, int(steps_to_move))
 
-def move_along_line(controller: Vehicle, iter_pos: Iterator[Tuple[int,Tuple[float,float]]):
+def move_along_line(controller: Vehicle, iter_pos: Iterator[Tuple[int,Tuple[float,float]]]):
     """moves car along the line"""
     for step, (tarx, tary) in iter_pos:
         for instruction in move_to_point(controller.position, tarx, tary):
