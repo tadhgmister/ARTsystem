@@ -42,6 +42,8 @@ def move_along_line(controller: Vehicle, iter_pos: Iterator[Tuple[int,Tuple[floa
             yield controller.position
 
 
+############# TEST CODE 
+
 def collect_test_positions(lines_of_drawing):
     def positionToTuple(pos: Position):
         return (pos.x, pos.y)
