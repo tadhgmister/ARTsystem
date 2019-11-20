@@ -6,5 +6,5 @@ class dataStub:
         print("Initialized database.  Storage: " +str(self.storage))
 
     def log(self, *data):
-        self.storage.append([data])
+        self.storage.append(data)
         print("Storage: " +str(self.storage))
