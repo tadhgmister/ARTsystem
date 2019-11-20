@@ -37,7 +37,6 @@ def reply(server: socket, addr, message):
     # Created this in case we want to separate some part of the logic from the main loop
     server.sendto(bytearray(message), addr)
 
-
 def getPosition(camera: ImgProc, database: dataStub):
     """
     Gets the position of the vehicle from the camera in the format (X, Y, Angle)
@@ -63,6 +62,11 @@ def getNext(database: dataStub, drawingID, step = 0):
     # TODO: Figure out what format to use.  Nested lists aren't playing nice
     return lines
 
+def getDrawing(database, imageID):
+    # TODO: Implement database access
+    # Placeholder function
+    return
+
 
 tracking = False
 drawingID = 0
@@ -80,34 +84,35 @@ while True:
     # takes any required Tower-side actions, and replies to the sender
     data, addr = listen(server)
     
-    if(data[0]==STANDBY):
+    if(data[0]==OPCODE.STANDBY.value):
         tracking = False
         drawingID = 0
-        message = [ACK]
+        message = [OPCODE.ACK.value]
         reply(server, addr, message)
 
-    elif(data[0]==TRACK):
+    elif(data[0]==OPCODE.TRACK.value):
         if(drawingID!=0):
-            message = [ERROR, "Already tracking a drawing"]
+            message = [OPCODE.ERROR.value]  # Error if already tracking a drawing
             reply(server, addr, message)
         else:
             imageID = data[1]
-            drawingID = getDrawing(imageID)
+            drawingID = getDrawing(database, imageID)
             tracking = True
-            message = [ACK]
+            message = [OPCODE.ACK.value]
             reply(server, addr, message)
 
-    elif(data[0]==POSITION):
+    elif(data[0]==OPCODE.POSITION.value):
         x, y, angle = getPosition(cameraSensor, database)
-        message = [POSITION, x, y, angle]
+        message = (str(OPCODE.POSITION.value)+" "+str(x)+" "+str(y)+" "+
+                   str(angle)).encode()
         reply(server, addr, message)
 
-    elif(data[0]==NEXTPOS):
+    elif(data[0]==OPCODE.NEXTPOS.value):
         if not(data[1]==drawingID):
-            message = [ERROR, "drawingID does not match tracked drawing"]
+            message = [OPCODE.ERROR.value]  # Error if provided drawingID doesn't match tracked ID
             reply(server, addr, message)
         lines = getNext(database, data[1], data[2])
-        message = [NEXTPOS, lines]
+        message = [OPCODE.NEXTPOS.value, lines]
 
     # Clearing variable to avoid reusing data from the last message (redundant)
     data = None

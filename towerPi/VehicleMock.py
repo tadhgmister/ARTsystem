@@ -14,29 +14,27 @@ import time
 from towerCommon import OPCODE
 
 # Setting up the client socket and declaring the server info
-server_address = ('localhost', 10000)
+server_address = ('localhost', 1000)
 client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-client.bind(('localhost', 9999))
 
-POSITION = 3
-STANDBY = 0
-TRACK = 2
 
 def checkPos(testNum):
     """
     Sends a checkPosition request to the Tower and waits for a response
     Prints the result of the test request
     """
-    message = [POSITION]
-    print("Sending position request: " +str(message))
+    message = [OPCODE.POSITION.value]
     client.sendto(bytearray(message), server_address)
     
-    data, server = client.recvfrom(4096)
-    if(output[0]==POSITION):
-        print('Test ' +str(testNum)+ ' CheckPos request: Received position response.  Please manually verify values')
+    raw, server = client.recvfrom(4096)
+    data = raw.decode().split(" ")
+    if(int(data[0])==OPCODE.POSITION.value):
+        print('Test ' +str(testNum)+ ' Position request: Received {!r}.  '
+              .format(OPCODE.POSITION)+'Please manually verify values:')
         print(data)
     else:
-        print('Test ' +str(testNum)+ ' CheckPos request: Failed.  Received: {!r}'.format(data))
+        print('Test ' +str(testNum)+ ' Position request: Failed.  Received: {!r}'
+              .format(data))
 
 
 def track(testNum, ID, expected):
@@ -44,15 +42,16 @@ def track(testNum, ID, expected):
     Sends a track request to the Tower and waits for a response
     Prints the result of the test request
     """
-    message = [TRACK, ID]
-    print("Sending track request: " +str(message))
+    message = [OPCODE.TRACK.value, ID]
     client.sendto(bytearray(message), server_address)
 
     data, server = client.recvfrom(4096)
-    if(data[0]==expected):
-        print('Test ' +str(testNum)+ ' Track request: Passed.  Received packet: {!r}'.format(data))
+    if(data[0]==expected.value):
+        print('Test ' +str(testNum)+ ' Track request: Passed.  Received {!r}'
+              .format(expected))
     else:
-        print('Test ' +str(testNum)+ ' Track request: Failed.  Received: {!r}'.format(data))
+        print('Test ' +str(testNum)+ ' Track request: Failed.  Received: {!r}'
+              .format(data))
 
 
 def standby(testNum):
@@ -60,12 +59,12 @@ def standby(testNum):
     Sends a standby request to the Tower and waits for a response.
     Prints the result of the test request
     """
-    message = [STANDBY]
+    message = [OPCODE.STANDBY.value]
     client.sendto(bytearray(message), server_address)
 
     data, server = client.recvfrom(4096)
-    if(data[0]==ACK):
-        print('Test ' +str(testNum)+ ' Standby request: Passed.  Received Ack packet')
+    if(data[0]==OPCODE.ACK.value):
+        print('Test ' +str(testNum)+ ' Standby request: Passed.  Received {!r}'.format(OPCODE.ACK))
     else:
         print('Test ' +str(testNum)+ ' Standby request: Failed.  Received: {!r}'.format(data))
     
@@ -74,16 +73,16 @@ if __name__ == "__main__":
     Sends several "Check Position" requests while also changing the state of
     the server (starting tracking, switching to standby)
     """
-    print("Running automated tests...")
+    print("Running automated tests...\n")
 
     checkPos(1)  # Check position while not tracking
-    track(2, 1, ACK) # Start tracking
-    track(3, 2, ERROR) # Attempt to track a different drawing
+    track(2, 1, OPCODE.ACK) # Start tracking
+    track(3, 2, OPCODE.ERROR) # Attempt to track a different drawing
     checkPos(4) # Check position while tracking
     standby(5)  # Standby while tracking
     standby(6)  # Standby while not tracking
 
-    print("Done automated tests.  Closing UDP socket.")
+    print("\nDone automated tests.  Closing UDP socket.")
     client.close()
     print("Enter anything to quit execution.")
     input(">>> ")   # Gives you time to review the tests before quitting execution
