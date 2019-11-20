@@ -37,12 +37,12 @@ def checkPos(testNum):
               .format(data))
 
 
-def track(testNum, ID, expected):
+def track(testNum, imgID, expected):
     """
     Sends a track request to the Tower and waits for a response
     Prints the result of the test request
     """
-    message = [OPCODE.TRACK.value, ID]
+    message = [OPCODE.TRACK.value, imgID]
     client.sendto(bytearray(message), server_address)
 
     data, server = client.recvfrom(4096)
@@ -50,8 +50,27 @@ def track(testNum, ID, expected):
         print('Test ' +str(testNum)+ ' Track request: Passed.  Received {!r}'
               .format(expected))
     else:
-        print('Test ' +str(testNum)+ ' Track request: Failed.  Received: {!r}'
-              .format(data))
+        print('Test ' +str(testNum)+ ' Track request: Failed.  Received OpCode:'+
+              ' {!r}'.format(data)+'\nExpected OpCode: '+str(expected.value))
+
+
+def getNextStep(testNum, imgID, stepID, expected):
+    """
+    Sends a getLines request to the Tower and waits for a response
+    Prints the result of the test request
+    """
+    message = [OPCODE.NEXTPOS.value, imgID, stepID]
+    client.sendto(bytearray(message), server_address)
+    
+    raw, server = client.recvfrom(4096)
+    data = raw.decode().split(" ")
+    if(int(data[0])==expected.value):
+        print('Test ' +str(testNum)+ ' Next Step request: Received {!r}.  '
+              .format(expected)+'Please manually verify values:')
+        print(data)
+    else:
+        print('Test ' +str(testNum)+ ' Position request: Failed.  Received OpCode:'+
+              ' {!r}'.format(data)+'\nExpected OpCode: '+str(expected.value))
 
 
 def standby(testNum):
@@ -79,8 +98,10 @@ if __name__ == "__main__":
     track(2, 1, OPCODE.ACK) # Start tracking
     track(3, 2, OPCODE.ERROR) # Attempt to track a different drawing
     checkPos(4) # Check position while tracking
-    standby(5)  # Standby while tracking
-    standby(6)  # Standby while not tracking
+    getNextStep(5, 1, 1, OPCODE.NEXTPOS)
+    standby(6)  # Standby while tracking
+    getNextStep(7, 1, 1, OPCODE.ERROR)
+    standby(8)  # Standby while not tracking
 
     print("\nDone automated tests.  Closing UDP socket.")
     client.close()

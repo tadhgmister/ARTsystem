@@ -55,12 +55,17 @@ def getNext(database: dataStub, drawingID, step = 0):
     - drawingID is the ID of the currently tracked drawing
     - step is the stepID of the next step in the drawing
 
-    Returns a nested list of points in the format [step, lineID, [x,y]]
+    Returns a string of points in the format "step,lineID,x,y step,lineID,x,y"
     """
     lines = []
     # TODO: add database access to get the drawing info
     # TODO: Figure out what format to use.  Nested lists aren't playing nice
-    return lines
+    lines = database.getStep(drawingID, step)
+    
+    for i in range(0, len(lines)):
+        string = str(step)+str(lines[i][0])+","+str(lines[i][1])+","+str(lines[i][2])+" "
+            
+    return string
 
 def getDrawing(database, imageID):
     # TODO: Implement database access
@@ -108,11 +113,13 @@ while True:
         reply(server, addr, message)
 
     elif(data[0]==OPCODE.NEXTPOS.value):
-        if not(data[1]==drawingID):
-            message = [OPCODE.ERROR.value]  # Error if provided drawingID doesn't match tracked ID
+        if not(tracking):
+            message = str(OPCODE.ERROR.value).encode()  # Error if not tracking a drawing
             reply(server, addr, message)
-        lines = getNext(database, data[1], data[2])
-        message = [OPCODE.NEXTPOS.value, lines]
+        else:
+            lines = getNext(database, data[1], data[2])
+            message = (str(OPCODE.NEXTPOS.value)+" "+lines).encode()
+            reply(server, addr, message)
 
     # Clearing variable to avoid reusing data from the last message (redundant)
     data = None
