@@ -1,8 +1,11 @@
 from __future__ import annotations
 """
 controller for the vehicle program to move the car.
+
+Version 1.1: Added a socket to the class for UDP communication
 """
 import typing
+import socket
 from common import Position, MOVE
 from towerCommunication import sync_position
 
@@ -19,6 +22,9 @@ contains methods to move the motors in order to move the car."""
     "current position of the car relative to the tower, TODO: initial value?"
     drawing: bool = None #initially not True or False so that the shortcut in set_chalk will never ignore the first instruction.
     "whether the chalk is down so vehicle is drawing or not."
+    # socket to be used for UDP communication with the tower.
+    sock: Socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    
     def __init__(self):
         # should this take position as input or do we even know where the car is at this point?
         NotImplemented
@@ -29,7 +35,7 @@ contains methods to move the motors in order to move the car."""
         this will make a call to the tower and block all operations until tower returns with answer
         it will also send the current location (calculated based on ideal conditions) for logging purposes
         """
-        self.position = sync_position(self.position, current_step)
+        self.position = sync_position(self.position, current_step, self.sock)
         
     def move(self, instruction: MOVE):
         self._fail_if_not_initialized()
