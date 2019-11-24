@@ -90,6 +90,20 @@ def get_lines_of_drawing(drawing_ID, step_ID=None)
 
     If step_ID is not given this will start from last recorded step in drawing.
     """
+    # FOR FUTURE USE
+    # TODO: un-comment the code and properly parse the packet for step data
+    # Request the next lines in the drawing from the Tower
+    #message = [OPCODE.NEXTPOS.value, drawing_ID, step_ID]
+    #client.sendto(bytearray(message), server_address)
+    #
+    #raw, server = client.recvfrom(1024)
+    #data = raw.decode().split(" ")
+    # Checking if the packet is an error/unexpected packet
+    #if(int(data[0])==OPCODE.ERROR.value):
+    #    raise TypeError(f"Tower-side Error: {!r}".format(raw.decode()))
+    #elif not(int(data[0])==OPCODE.POSITION.value):
+    #    raise TypeError(f"Error: Received unexpected packet type {!r}".format(data[0]))
+    
     def key(item: ("step", "line", "point")):
         return item[1]
     def remove_line(item: ("step", "line", "point")):
