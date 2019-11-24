@@ -3,7 +3,7 @@ from enum import Enum
 
 class OPCODE(Enum):
     """
-    The int values of all of the request types the Towercan receive.
+    The int values of all expected packet types.
     """
     STANDBY = 0
     CALIBRATE = 1

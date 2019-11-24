@@ -13,6 +13,17 @@ class MOVE(Enum):
     BR = "backwards right" #left wheel backwards
     BL = "backwards left" #right wheel backwards
 
+class OPCODE(Enum):
+    """
+    The int values of all expected packet types.
+    """
+    STANDBY = 0 #Standy request packet
+    CALIBRATE = 1 #Calibration request/instruction packets
+    TRACK = 2   #Drawing request(from app)/tracking request(to Tower) packets
+    POSITION = 3 #Position request packet (for sync_position)
+    NEXTPOS = 4 #Get next step/line request
+    ACK = 5
+    ERROR = 6   #For any errors.  Error packets should contain an info string.
 
 class Position:
     """position of the car"""
