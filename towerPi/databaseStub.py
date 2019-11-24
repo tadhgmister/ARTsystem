@@ -1,4 +1,5 @@
-# A class that just accepts and stores any data
+# A class that accepts and stores any data, and provides a known tuple on a
+# getStep request
 class dataStub:
     
     def __init__(self):
@@ -8,3 +9,7 @@ class dataStub:
     def log(self, *data):
         self.storage.append(data)
         print("Storage: " +str(self.storage))
+
+    def getStep(self, drawingID, step):
+        lines = (1, (1, (1, 1)))
+        return lines

@@ -114,7 +114,7 @@ while True:
 
     elif(data[0]==OPCODE.NEXTPOS.value):
         if not(tracking):
-            message = str(OPCODE.ERROR.value).encode()  # Error if not tracking a drawing
+            message = str(OPCODE.ERROR.value+" No active drawing").encode()  # Error if not tracking a drawing
             reply(server, addr, message)
         else:
             lines = getNext(database, data[1], data[2])
