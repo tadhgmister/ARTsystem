@@ -1,10 +1,18 @@
 """
 Contains all code to communicate from vehicle to tower
+
+Version 1.1: Added socket methods and a placeholder server address for communicating with
+    the tower.  Sync_position now returns the real position; calculated_position is ignored.
 """
 import itertools
-from common import Position
+import socket
+from common import Position, OPCODE
 
-def sync_position(calculated_position: Position, current_step: int) -> Position:
+
+
+server_address = ('localhost', 1000)
+    
+def sync_position(calculated_position: Position, current_step: int, client: Socket) -> Position:
     """asks tower to calculate exact position of the vehicle
     also sends the current step and calculated position to sync info
     this will block execution until tower can take and process image of vehicle
@@ -14,12 +22,21 @@ def sync_position(calculated_position: Position, current_step: int) -> Position:
 
     Returns position given by the tower
     """
-    #TODO: actually contact server
-    #until we have tower communication we can ignore correction.
+    message = [OPCODE.POSITION.value]   # CheckPos message.  Only the OpCode is required
+    client.sendto(bytearray(message), server_address)
+
+    raw, server = client.recvfrom(1024)
+    data = raw.decode().split(" ")  # Position packets are a byte array of string data containing [opcode,x,y,facing]
+    if not(int(data[0])==OPCODE.POSITION.value):
+        raise TypeError(f"Unexpected error: Received unexpected packet type {!r}".format(data[0]))
+
+    real_position = Position(float(data[1]), float(data[2]), float(data[3]))
+
+    #TODO: Calculate error using calculated_position and real_position?
     if calculated_position is None:
         # can just say car is exactly at tower, not realistic but reasonable for testing.
         calculated_position = Position(0,0)
-    return calculated_position 
+    return real_position 
 
 
 def load_points_for_drawing(drawing_ID, step_ID=None):
@@ -28,7 +45,7 @@ def load_points_for_drawing(drawing_ID, step_ID=None):
     - ID is the step_ID stored in the database
     - line is the line id in the database
     - x,y are coordinates in mm relative to the tower.
-    
+   
     if step_ID is not given this will load the current step from the drawing table and start from there
     to start at the beginning you can pass step_ID=0
     """
@@ -44,10 +61,10 @@ def load_points_for_drawing_MOCK(drawing_ID, step_ID=None):
     points = [(0,0), (0, BOX_HEIGHT), (BOX_WIDTH, BOX_HEIGHT), (BOX_WIDTH, 0), (0, 0)]
     # 3 boxes offset with full line and point ids set.
     all_steps = [(idx+line*len(points),
-                  line,
-                  (x+line*OFFSET_X, y+line*OFFSET_Y))
+                line,
+                (x+line*OFFSET_X, y+line*OFFSET_Y))
                     for line in range(NUM_BOXES)
-                       for idx, (x,y) in enumerate(points)]
+                        for idx, (x,y) in enumerate(points)]
     if step_ID is None:
         step_ID = 0
     if not isinstance(step_ID, int):
