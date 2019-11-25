@@ -9,6 +9,9 @@ from common import Position, MOVE
 from vehicleController import Controller as Vehicle
 import towerCommunication
 
+# set to true below in if __name__ == "__main__"
+DEBUG = False
+
 def pol_dist(dx,dy):
     """converts (x,y) distance to polar distance (straight line distance)"""
     return abs(dx + 1j*dy) #abs on complex numbers is designed to do this.
@@ -34,12 +37,19 @@ def move_to_point(curPos: Position, targetX: float, targetY: float) -> Generator
     steps_to_move = pol_dist(tarx-curx, tary-cury) // Vehicle.WHEEL_STEP_INCREMENT
     yield from itertools.repeat(MOVE.F, int(steps_to_move))
 
+    #yield MOVE.L
+
 def move_along_line(controller: Vehicle, iter_pos: Iterator[Tuple[int,Tuple[float,float]]]):
     """moves car along the line"""
     for step, (tarx, tary) in iter_pos:
         for instruction in move_to_point(controller.position, tarx, tary):
             controller.move(instruction)
             yield controller.position
+        if DEBUG:
+            global deviation
+            deviation = max(deviation, pol_dist(controller.position.x - tarx,
+                                               controller.position.y - tary))
+                
 
 
 ############# TEST CODE 
@@ -54,12 +64,19 @@ def collect_test_positions(lines_of_drawing):
         yield map(positionToTuple, move_along_line(controller, line))
 
 if __name__ == "__main__":
-    print("MANUAL TEST")
+    DEBUG = True
+    deviation = 0
+    tolerance = 2*Vehicle.WHEEL_STEP_INCREMENT #mm allowed deviation
+    print("RUNNING TEST")
     lines = towerCommunication.get_lines_of_drawing(0)
     for idx,shape in enumerate(collect_test_positions(lines)):
         [x,y] = zip(*shape)
         
         pyplot.plot(x,y, label=f"shape{idx}")
+    print(f"max deviation: {deviation:.3f}mm")
+    if deviation > tolerance:
+        import sys
+        print(f"FAIL: algorithm results in {deviation/Vehicle.WHEEL_STEP_INCREMENT:.1%} of the step increment", file=sys.stderr)
     # need to get new iterator since other one is exausted.
     lines = towerCommunication.get_lines_of_drawing(0)
     for (lineID, line) in lines:
@@ -68,3 +85,5 @@ if __name__ == "__main__":
     pyplot.title("sample output")
     pyplot.legend()
     pyplot.show()
+
+

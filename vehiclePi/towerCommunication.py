@@ -4,6 +4,7 @@ Contains all code to communicate from vehicle to tower
 Version 1.1: Added socket methods and a placeholder server address for communicating with
     the tower.  Sync_position now returns the real position; calculated_position is ignored.
 """
+import sqlite3
 import itertools
 import socket
 from common import Position, OPCODE
@@ -56,7 +57,8 @@ def get_lines_of_drawing(drawing_ID, step_ID=None):
     def key(item: ("step", "line", "point")):
         return item[1]
     def remove_line(item: ("step", "line", "point")):
-        return (item[0], item[2])
+        [step, line, point] = item
+        return (step, point)
     iterator = itertools.groupby(load_points_for_drawing(drawing_ID, step_ID), key)
 
     for line_id, line_iter in iterator:
@@ -66,7 +68,7 @@ def get_lines_of_drawing(drawing_ID, step_ID=None):
 
 def load_points_for_drawing(drawing_ID, step_ID=None):
     """loads points from the tower and returns them as a generator
-    points are yielded in a nested tuple (ID,line, (x,y)) where
+    points are yielded in a nested tuple (ID,line, x,y) where
     - ID is the step_ID stored in the database
     - line is the line id in the database
     - x,y are coordinates in mm relative to the tower.
@@ -74,10 +76,35 @@ def load_points_for_drawing(drawing_ID, step_ID=None):
     if step_ID is not given this will load the current step from the drawing table and start from there
     to start at the beginning you can pass step_ID=0
     """
-    # TODO: do actual loading
-    return load_points_for_drawing_MOCK(drawing_ID, step_ID)
+##    return load_points_for_drawing_MOCK(drawing_ID, step_ID)
+    cursor = mydb.cursor()
+    cursor.execute("SELECT patternUsed, bound1x, bound1y, bound2x, bound2y, currentStep FROM drawings WHERE id=?", (drawing_ID,))
+    result = cursor.fetchall()
+    if len(result) == 0:
+        # no results in database, drawingid not found
+        raise ValueError(f"cannot find a drawing with drawing ID {drawing_ID}")
+    assert len(results) == 1, "more than one drawing_ID found, something is wrong"
+    [patternUsed, bound1x, bound1y, bound2x, bound2y, currentStep] = result[0]
+    cursor.execute("SELECT width, height FROM patterns WHERE id=?", (patternUsed,))
+    result = cursor.fetchall()
+    assert len(results) == 1, "drawing points to pattern with not unique pattern"
+    [pwidth, pheight] = result[0]
+    if step_ID is None:
+        step_ID = currentStep
+    
+    patternid = 1
+    cursor.execute("SELECT stepIndex, lineIndex, x, y FROM patternSteps WHERE patternId=?", (patternUsed,))
+    for (stepIndex, lineIndex, x, y) in cursor:
+        if stepIndex < step_ID:
+            continue #keep skipping until we get to step_ID
+        # x and y here are in canvas coordinates, so when equal to 0 it should go to bound1x or bound1y
+        # and at the pwidth/pheight it should give bound2 value
+        newx = bound1x + (bound2x-bound1x)*(x/pwidth)
+        newy = bound1y + (bound2y-bound1y)*(y/pheight)
+        yield (stepIndex, lineIndex, (newx, newy))
+        
 
-
+#def load_points_for_drawing_from_database(drawing_ID, cursor
 
 ############################## TEST CODE
 
@@ -86,7 +113,7 @@ def load_points_for_drawing_MOCK(drawing_ID, step_ID=None):
     Loads a hard coded set of points to test with.
     Points are in the form of several squares offset from each other.
     """
-    if drawing_ID != 0:
+    if drawing_ID != 1:
         raise ValueError(f"cannot find a drawing with drawing ID {drawing_ID}")
     BOX_WIDTH, BOX_HEIGHT = 10,10 #mm
     OFFSET_X, OFFSET_Y = 20,20
@@ -108,6 +135,15 @@ def load_points_for_drawing_MOCK(drawing_ID, step_ID=None):
     #otherwise yield all remaining steps.
     yield from all_steps[step_ID:]
 
+try:
+    mydb = sqlite3.connect("./testDB.db")
+    test = list(load_points_for_drawing(1))
+except Exception:
+    load_points_for_drawing = load_points_for_drawing_MOCK
+    print("ERROR: couldn't connect to database, using mock function to load data")
+    import traceback
+    traceback.print_exc()
+    mydb = None
 
 def get_lines_of_drawing(drawing_ID, step_ID=None)
      -> Generator[Tuple[int,Iterator[Tuple[int,Tuple[float,float]]]],None,None]:
@@ -154,8 +190,9 @@ if __name__ == "__main__":
     print("RUNNING MANUAL TEST CASES", end="\n\n")
 
     print("LOADING LINES LOOP")
-    for line_id, line in get_lines_of_drawing(0):
+    for line_id, line in get_lines_of_drawing(1):
         print(f"---- on line {line_id}")
         for step, (x,y) in line:
             print(f"step {step}: ({x}, {y})")
-
+    if mydb:
+        mydb.close()
