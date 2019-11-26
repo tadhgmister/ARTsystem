@@ -63,19 +63,19 @@ void loop() {
       switch(instruction) {
         case 48: 
         //Move Forwards
-          case0();  // ASCII 48 = int 0
+          forwards();  // ASCII 48 = int 0
           break;
         case 49: 
         //Move Backwards
-          case1();    // ASCII 49 = int 1
+          backwards();    // ASCII 49 = int 1
           break;
         case 50: 
         //Move Left
-          case2();      // ASCII 50 = int 2
+          left();      // ASCII 50 = int 2
           break;
         case 51: 
         //Move Right
-          case3();      // ASCII 51 = int 3
+          right();      // ASCII 51 = int 3
           break;
         case 52: 
         //Half Step Left Forwards
@@ -112,45 +112,41 @@ void loop() {
   Serial.write(6);  // ASCII 6 = ACK.  Shows up as a [] in the serial monitor.
 }
 //Cases for motor movement
-void case0(){//Forwards
-  digitalWrite(lDir, LOW);
-  digitalWrite(rDir, HIGH);
+void forwards(){
   digitalWrite(lStep, HIGH);
-  digitalWrite(rStep, HIGH);
-  delayMicroseconds(2000);
-  digitalWrite(lStep, LOW);
-  digitalWrite(rStep, LOW);
-  delayMicroseconds(2000);
-}
-void case1(){//Backwards
   digitalWrite(lDir, HIGH);
-  digitalWrite(rDir, LOW);
-  digitalWrite(lStep, HIGH);
+
   digitalWrite(rStep, HIGH);
-  delayMicroseconds(2000);
-  digitalWrite(lStep, LOW);
-  digitalWrite(rStep, LOW);
-  delayMicroseconds(2000);
-}
-void case2(){ //Left
-  digitalWrite(lDir, HIGH);
   digitalWrite(rDir, HIGH);
-  digitalWrite(lStep, HIGH);
-  digitalWrite(rStep, HIGH);
   delayMicroseconds(2000);
-  digitalWrite(lStep, LOW);
-  digitalWrite(rStep, LOW);
-  delayMicroseconds(2000);
+  clear();
 }
-void case3(){//Right
-  digitalWrite(lDir, LOW);
-  digitalWrite(rDir, LOW);
+void backwards(){
   digitalWrite(lStep, HIGH);
+  digitalWrite(lDir, LOW);
+
   digitalWrite(rStep, HIGH);
+  digitalWrite(rDir, LOW);
   delayMicroseconds(2000);
-  digitalWrite(lStep, LOW);
-  digitalWrite(rStep, LOW);
+  clear();
+}
+void left(){
+  digitalWrite(lStep, HIGH);
+  digitalWrite(lDir, LOW);
+
+  digitalWrite(rStep, HIGH);
+  digitalWrite(rDir, HIGH);
   delayMicroseconds(2000);
+  clear();
+}
+void right(){
+  digitalWrite(lStep, HIGH);
+  digitalWrite(lDir, HIGH);
+
+  digitalWrite(rStep, HIGH);
+  digitalWrite(rDir, LOW);
+  delayMicroseconds(2000);
+  clear();
 }
 void case4(){//Half Step Left
   digitalWrite(rDir, HIGH);
@@ -184,8 +180,6 @@ void case7(){// Half Step Right Back
 void clear(){//Clears all motor commands
 
 digitalWrite(lStep, LOW);
-digitalWrite(lDir, LOW);
 digitalWrite(rStep, LOW);
-digitalWrite(rDir, LOW);
 
 }
