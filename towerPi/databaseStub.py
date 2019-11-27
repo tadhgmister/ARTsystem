@@ -6,7 +6,7 @@ class dataStub:
         self.storage = []
         print("Initialized database.  Storage: " +str(self.storage))
 
-    def log(self, *data):
+    def log(self, *data, step):
         self.storage.append(data)
         print("Storage: " +str(self.storage))
 

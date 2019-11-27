@@ -7,6 +7,7 @@ Version 1.1: Added socket methods and a placeholder server address for communica
 import sqlite3
 import itertools
 import socket
+import pickle
 from common import Position, OPCODE
 
 
@@ -23,15 +24,18 @@ def sync_position(calculated_position: Position, current_step: int, client: Sock
 
     Returns position given by the tower
     """
-    message = [OPCODE.POSITION.value]   # CheckPos message.  Only the OpCode is required
-    client.sendto(bytearray(message), server_address)
+    # First creates a bytearray with the ints we need to send, then adds the position object
+    # Doing it this way to make Tower-side parsing easier.
+    message = bytearray([OPCODE.POSITION.value, current_step])+bytearray(pickle.dumps(calculated_position))
+    client.sendto(message, server_address)
 
     raw, server = client.recvfrom(1024)
-    data = raw.decode().split(" ")  # Position packets are a byte array of string data containing [opcode,x,y,facing]
-    if not(int(data[0])==OPCODE.POSITION.value):
+    # Position packets are a byte array of string data containing [opcode,x,y,facing]
+    if not(int(raw[0])==OPCODE.POSITION.value):
         raise TypeError(f"Unexpected error: Received unexpected packet type {!r}".format(data[0]))
 
-    real_position = Position(float(data[1]), float(data[2]), float(data[3]))
+    # If we got a position packet, pull the position object from the raw data
+    real_position = pickle.loads(raw[1:(len(raw)-1)])
 
     #TODO: Calculate error using calculated_position and real_position?
     if calculated_position is None:

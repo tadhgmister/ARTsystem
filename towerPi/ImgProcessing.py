@@ -20,7 +20,7 @@ class ImgProc:
 
     # returns the camera calculated position of the car
     # FOR TEST it returns a random location between 22cm and 624cm, and orientation between 0 and 3.14rad
-    def getPos(self):
+    def getPos(self, expectedPos):
         self.status = 'processing'
 
         LEDs = self.camera.takePhoto()
