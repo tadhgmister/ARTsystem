@@ -27,7 +27,6 @@ arduino = serial.Serial(
 if arduino.isOpen():
     arduino.close()
 arduino.open()
-arduino.isOpen()
 
 print("Input some movement instruction values in the format '49 50 21'.\n" +
       "49, 51, and 52 (ASCII 0, 2, and 3) are the only expected values.")
