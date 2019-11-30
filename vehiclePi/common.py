@@ -30,9 +30,9 @@ class Position:
     """position of the car - coordinates and facing direction"""
     __slots__ = ["x","y","facing"]
     x: float
-    "x position of car relative to tower in mm"
+    "x position of car relative to tower in cm"
     y: float
-    "y position of car relative to tower in mm" 
+    "y position of car relative to tower in cm" 
     facing: float
     "angle car is facing in radians measured from positive x towards positive y"
 
