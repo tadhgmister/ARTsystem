@@ -4,15 +4,15 @@ from enum import Enum
 
 class MOVE(Enum):
     """movement commands sent to arduino to move the motors one step."""
-    F = "Forward" #both wheels forward
-    R = "Turn right in place" #left wheel forward, right wheel back
-    L = "Turn left in place" #right wheel forward, left wheel back
-    FR= "turn right moving forward" #only left wheel forward
-    FL= "turn left moving forward" #only right wheel forward
+    F = 48 #both wheels forward
+    R = 49 #left wheel forward, right wheel back
+    L = 50 #right wheel forward, left wheel back
+    FR= 51 #only left wheel forward
+    FL= 52 #only right wheel forward
     
-    B = "backwards" #both wheels backward
-    BR = "backwards right" #left wheel backwards
-    BL = "backwards left" #right wheel backwards
+    B = 53 #both wheels backward
+    BR = 54 #left wheel backwards
+    BL = 55 #right wheel backwards
 
 class OPCODE(Enum):
     """

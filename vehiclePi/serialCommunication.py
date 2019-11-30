@@ -39,14 +39,7 @@ def send_moves(arduinoPort = '/dev/ttyUSB0', *moves):
     
     # Parsing the moves argument
     for i in range(0, len(moves)):
-        if (moves[i]==MOVE.F) toSend.append(48)
-        elif (moves[i]==MOVE.B) toSend.append(49)
-        elif (moves[i]==MOVE.R) toSend.append(50)
-        elif (moves[i]==MOVE.L) toSend.append(51)
-        elif (moves[i]==MOVE.FL) toSend.append(52)
-        elif (moves[i]==MOVE.FR) toSend.append(53)
-        elif (moves[i]==MOVE.BL) toSend.append(54)
-        elif (moves[i]==MOVE.BR) toSend.append(55)
+        toSend.append(moves[i].value)
         
 
     # Sends the instructions that were inputted and waits to receive a message
