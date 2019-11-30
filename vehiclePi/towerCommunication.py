@@ -32,7 +32,7 @@ def sync_position(calculated_position: Position, current_step: int, client: sock
     raw, server = client.recvfrom(1024)
     # Position packets are a byte array of string data containing [opcode,x,y,facing]
     if not(int(raw[0])==OPCODE.POSITION.value):
-        raise TypeError(f"Unexpected error: Received unexpected packet type {!r}".format(data[0]))
+        raise TypeError("Unexpected error: Received unexpected packet type {!r}".format(data[0]))
 
     # If we got a position packet, pull the position object from the raw data
     real_position = pickle.loads(raw[1:(len(raw)-1)])
