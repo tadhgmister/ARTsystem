@@ -12,7 +12,7 @@ class _Ref:
         self.table = table
         self.field = field
     
-_ID = (int, "AUTO_INCREMENT")
+_ID = (int)#,  "AUTOINCREMENT")
 # contains the text expected in sql definitions for corresponding python types
 TYPE_CONVS = {bool:"bit", str:"text", int:"integer", float:"numeric",
               datetime.datetime:"timestamp"}
@@ -47,7 +47,7 @@ TABLE_DATA = {
         "bound2y":float,
         "timeInitialized":datetime.datetime,
         "currentStep":_Ref("patternSteps","stepIndex"),
-        "updateNotifications": str,
+        "updateNotification": str,
         "PRIMARY KEY": "(id)"
     },
     "logs": {
@@ -217,20 +217,14 @@ class Database:
     def load_logs_for_drawing(self, drawingId) -> typing.Generator[LogEntry,None,None]:
         """generates a series of LogEntry objects for all log entries for the given drawing
         *if the drawing does not exist no check is made* and empty iterator is returned."""
-        def normal_tuple_constructor_for_logEntry(fields):
-            # it really bugs me that namedtuple doesn't support normal tuple constructor.
-            return LogEntry(*fields)
         fields = ", ".join(LogEntry._fields)
         with self.cursor(f"SELECT {fields} FROM logs WHERE drawingId=?",(drawingId,)) as cursor:
             # use yield from so that after all are done with statement will still close the cursor.
-            yield from map(normal_tuple_constructor_for_logEntry, cursor)
+            yield from map(LogEntry._make, cursor)
 
     def load_steps_for_pattern(self, patternId) -> typing.Generator[StepEntry,None,None]:
         """generates a series of StepEntry objects for all steps in given pattern
         if there are no steps for the given pattern an error is thrown."""
-        def normal_tuple_constructor_for_StepEntry(fields):
-            # it really bugs me that namedtuple doesn't support normal tuple constructor.
-            return StepEntry(*fields)
         fields = ", ".join(StepEntry._fields)
         with self.cursor(f"SELECT {fields} FROM patternSteps WHERE patternId=?",(patternId,)) as cursor:
             # will check that we have at least one entry, otherwise we should throw an error instead of just yielding no items.
@@ -239,12 +233,33 @@ class Database:
                 raise ValueError(f"can't find any steps for pattern {patternId}")
             yield StepEntry(*first_one)
             # use yield from so that after all are done with statement will still close the cursor.
-            yield from map(normal_tuple_constructor_for_StepEntry, cursor)
+            yield from map(StepEntry._make, cursor)
 
 
+def INIT_DATABASE(file="testDB.db"):
+    import os
+    os.remove(file)
+    db = Database(file)
+    db.create_tables()
+    from towerCommunication import load_points_for_drawing_MOCK
+    all_points = list(load_points_for_drawing_MOCK(1))
+    [step,line,x,y] = zip(*all_points)
+    pID = db.create_new_pattern(all_points, max(x), max(y))
+    loBound = Position(10,60)
+    hiBound = Position(60,10)
+    dID = db.create_drawing(pID, loBound, hiBound)
+
+    print("new pattern",pID, "and new drawing",dID)
+    return db
+
+db = Database()
 if __name__ == "__main__":
-    db = Database()
-    #db.create_tables()
+    db = INIT_DATABASE()
+    with db.cursor("SELECT id from drawings") as cursor:
+        print(list(cursor))
+    
+    with db.cursor("SELECT id from patterns") as cursor:
+        print(list(cursor))
     for thing in db.load_steps_for_pattern(1):
         print(thing)
         

@@ -15,7 +15,7 @@ This class maintains the position and orientation of the vehicle and
 contains methods to move the motors in order to move the car."""
     #TODO: get actual increments for these.
     WHEEL_STEP_INCREMENT: typing.ClassVar[float] = 0.5
-    "mm wheel moves per step."
+    "cm wheel moves per step."
     WHEEL_TURN_INCREMENT: typing.ClassVar[float] = 0.1
     "radians turned when turning wheel"
     position: Position = None
