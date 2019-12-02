@@ -27,7 +27,11 @@ def move_to_point(curPos: Position, targetX: float, targetY: float) -> Generator
     ### Orient the correct direction
     needed_facing = math.atan2(tary - cury, tarx - curx)
     #TODO: SHOULD CONSIDER WRAP AROUND FOR ANGLES, WON'T TURN OPTIMAL DIRECTION THIS WAY
-    steps_to_turn = (needed_facing - curfacing) // Vehicle.WHEEL_TURN_INCREMENT
+    angle_to_turn = (needed_facing - curfacing) % (2*math.pi)
+    if angle_to_turn > math.pi:
+        #should be turning left instead. subtract 2pi radians to be a negative number
+        angle_to_turn -= 2*math.pi
+    steps_to_turn = angle_to_turn // Vehicle.WHEEL_TURN_INCREMENT
     dir_to_turn = MOVE.R if steps_to_turn < 0 else MOVE.L
     yield from itertools.repeat(dir_to_turn, int(abs(steps_to_turn)))
     curfacing += steps_to_turn * Vehicle.WHEEL_TURN_INCREMENT
@@ -41,14 +45,22 @@ def move_to_point(curPos: Position, targetX: float, targetY: float) -> Generator
 
 def move_along_line(controller: Vehicle, iter_pos: Iterator[Tuple[int,Tuple[float,float]]]):
     """moves car along the line"""
+    # TODO: we should check if there are no movement instructions to get to
+    # first point and skip the chalk_up then chalk_Down in that case.
+    yield MOVE.CHALK_UP
+    got_to_first_point = False
     for step, (tarx, tary) in iter_pos:
         for instruction in move_to_point(controller.position, tarx, tary):
             controller.move(instruction)
             yield controller.position
+        if not got_to_first_point:
+            got_to_first_point = True
+            yield MOVE.CHALK_DOWN
         if DEBUG:
             global deviation
             deviation = max(deviation, pol_dist(controller.position.x - tarx,
                                                controller.position.y - tary))
+    
                 
 
 

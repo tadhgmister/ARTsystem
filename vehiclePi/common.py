@@ -14,6 +14,9 @@ class MOVE(Enum):
     BR = 54 #left wheel backwards
     BL = 55 #right wheel backwards
 
+    CHALK_UP = "chalk up"
+    CHALK_DOWN = "chalk_down"
+
 class OPCODE(Enum):
     """
     The int values of all expected packet types.

@@ -48,6 +48,8 @@ contains methods to move the motors in order to move the car."""
         elif instruction is MOVE.L:
             #TODO: send arduino command
             self.position = self.position.turned(self.WHEEL_TURN_INCREMENT)
+        elif instruction in (MOVE.CHALK_DOWN, MOVE.CHALK_UP):
+            self.set_drawing(instruction == MOVE.CHALK_DOWN)
         else:
             raise NotImplementedError(f"invalid movement: {instruction!r}")
         
