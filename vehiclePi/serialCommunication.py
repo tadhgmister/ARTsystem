@@ -9,8 +9,8 @@ Version 1.1: Updated running loop and set default serial port path to ttyUSB0
 Version 1.2: Moved code into a function for use by other scripts.
 
 Author: Scott Malonda
-Version: 1.1
-Date: Nov 16, 2019
+Version: 1.2
+Date: Nov 30, 2019
 """
 
 import serial
