@@ -187,7 +187,7 @@ class ImgProc:
             ySecBig, xSecBig = np.where(currSecBiggest == state['r'])
             if len(yBig) < len(y):
                 currBiggest = shape
-            elif len(ySecBig) < len(y):
+            elif len(ySecBig) <= len(y):
                 currSecBiggest = shape
 
         # now to find which one is on top
@@ -200,8 +200,8 @@ class ImgProc:
             LEDs['rHigh'] = currSecBiggest
             LEDs['rLow'] = currBiggest
 
-        if LEDs['rHigh'] == LEDs['rLow']:
-            print('err') # TODO make my error cases WAY better
+        # if LEDs['rHigh'] == LEDs['rLow']:
+        #     print('err') # TODO make my error cases WAY better
 
         # since we have 2 reds now we need to update the states
         state = {'rHigh': 1, 'rLow': 1, 'g': 2, 'b': 3}
@@ -210,19 +210,22 @@ class ImgProc:
 
         # TODO check if each led has relatively the same width & shape
 
+        # TODO check if the LEDs are
         # NOW TO FIND THE CENTRAL POINT OF EACH LED
         LEDpoints = {}
+
+        LEDYcoords = {}
+        LEDXcoords = {}
 
         for i in LEDs:
             print(LEDs[i],'\n')
             y,x = np.where(LEDs[i] == state[i])
-            yDiff = (((max(y) - min(y)) + 1) + min(y)) / 2
-            xDiff = (((max(x) - min(x)) + 1) + min(x)) / 2
-            print('Diff:\t', yDiff, '\t', xDiff)
+            yDiff = (max(y) - min(y))/2 + min(y)
+            xDiff = (max(x) - min(x))/2 + min(x)
+            LEDYcoords[i] = yDiff
+            LEDXcoords[i] = xDiff
 
-
-
-
+        return LEDXcoords, LEDYcoords
 
 
 
@@ -300,24 +303,18 @@ class ImgProc:
         #img = cv2.imread('Images/Full_Res/' + f, cv2.IMREAD_COLOR)
         img = cv2.imread('Images/Full_Res/' + f, cv2.IMREAD_GRAYSCALE)
         h, w = img.shape[:2]
-        # edges = cv2.Canny(img, 100, 200)
-        # # kernel = np.ones((2, 2), np.uint8)
-        # # edges = cv2.erode(edges, kernel)
-        #
-        # gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        # gray = np.float32(gray)
-        # corners = cv2.cornerHarris(gray,2,3,0.04)
-        # #corners = cv2.dilate(corners, None)
-        # img[corners > 0.01 * corners.max()] = [0, 0, 255]
-        # print(img)
-        # print(corners)
-        # print(edges)
+        edges = cv2.Canny(img, 100, 200)
+        # kernel = np.ones((2, 2), np.uint8)
+        # edges = cv2.erode(edges, kernel)
 
-        for y in range(0, len(img[:,0,0])-1):
-            for x in range(0, len(img[0, :, 0]) - 1):
-
-
-
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        gray = np.float32(gray)
+        corners = cv2.cornerHarris(gray,2,3,0.04)
+        #corners = cv2.dilate(corners, None)
+        img[corners > 0.01 * corners.max()] = [0, 0, 255]
+        print(img)
+        print(corners)
+        print(edges)
 
         # plt.imshow(edges, cmap='hsv', interpolation='bicubic')
         # plt.show()
