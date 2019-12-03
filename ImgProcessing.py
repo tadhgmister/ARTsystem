@@ -9,14 +9,26 @@ except ImportError:
     from .ServoStub import Servo
 
 import cv2
+import math
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
 from scipy.interpolate import UnivariateSpline
 
-
+class ProcessingError(Exception):
+    pass
+ANGLE_TOLERANCE = math.pi/6 #30deg, if we measure more than this difference between tail and side lights then we will error
+RED_X_TOLERANCE = 0.1 #if red lights are detected more than this percent of x/y offsets then throw an error, if red leds are upright then this should be 0.
 class ImgProc:
-
+    #TODO: CORRECT THIS DISTANCE
+    TAIL_LIGHT_DISTANCE = 30
+    "distance from the red center led to the tail blue led in cm"
+    #TODO: CORRECT THIS POSITION
+    SIDE_LIGHT_DISTANCE = 10
+    "distance from the red center led to the side green led in cm"
+    #TODO CORRECT THIS NUMBER
+    RED_LIGHT_PX_TO_DISTANCE = -1
+    "conversion of pixels apart in image to distance car is from camera in cm"
     co = {'r':0, 'g':60, 'b':115}
 
     def __init__(self, debbugMODE):
@@ -27,15 +39,83 @@ class ImgProc:
         self.camera = Camera()
 
         self.status = 'standby'
+    def getPos(self, vehicleX, vehicleY, vehicleOrientation, *, raise_on_error=False):
+        """takes a photo of the car and returns a tuple (x,y,facing) for the position as calculated by the photo
+        if raise_on_error is passed as true then an error will be raised if something goes wrong, otherwise the error is logged
+        and the calculated position is returned instead.
+        """
+        try:
+            return self.getPos_internal(vehicleX, vehicleY, vehicleOrientation)
+        except ProcessingError as e:
+            if raise_on_error:
+                raise e #just reraise error
+            #otherwise just issue a warning and return the position we originally got as input
+            import warnings
+            warnings.warn(f"ERROR IN FINDING LEDS: {e}")
+            return (vehicleX,vehicleY,vehicleOrientation)
+        except NotImplementedError:
+            print("CASE THAT IS NOT IMPLEMENTED WAS HIT", e)
+            print("RETURNING CALCULATED NOT MEASURED POSITION")
+            return (vehicleX, vehicleY, vehicleOrientation)
 
-    # returns the camera calculated position of the car
+    def getPos_internal(self, vehicleX, vehicleY, vehicleOrientation):
+        """internal for getPos, this will throw an error if something is off."""
+        #first turn to face where the car is calculated to be
+        camera_angle = math.atan2(vehicleY, vehicleX)
+        self.servo.setAngle(camera_angle)
+        #next take the picture and find the led positions in the image.
+        f = self.camera.takePhoto()
+        [ledsX, ledsY] = self.identifyLEDS(f)
+        if set(ledsX.keys()) != set(ledsY.keys()):
+            #sanity check, this way we can just check one of the lists and we know the other list holds it too.
+            raise ValueError("mathew you messed up, x and y positions aren't consistent")
+        elif 'rHigh' not in ledsX or 'rLow' not in ledsX:
+            raise ProcessingError("cannot see both red leds")
+        elif 'g' not in ledsX:
+            raise NotImplementedError("need to consider special case where we calculate tail light and work if close to 45 or 90")
+        elif 'b' not in ledsX:
+            raise NotImplementedError("need to consider special case where we calculate side light and work if close to 45 or 90")
+        #otherwise we have all leds to do trig on
+        # ORIENTATION OF THE CAR:
+        # G   R (front up)
+        #    
+        #
+        #     B
+        
+        # first we will calculate the distance from the tower using the red leds.
+        red_light_pixel_dist = ledsY['rHigh'] - ledsY['rLow']
+        car_dist_from_tower = self.RED_LIGHT_PX_TO_DISTANCE * red_light_pixel_dist
+        #the x offset is expected to be very small so if this is high we probably have an issue.
+        red_light_x_offset = ledsX['rHigh'] - ledsX['rLow']
+        if red_light_x_offset/red_light_pixel_dist > RED_X_TOLERANCE:
+            raise ProcessingError("red lights were more than 10% offset in x direction")
+        
+        measuredX = math.cos(camera_angle) * car_dist_from_tower
+        measuredY = math.sin(camera_angle) * car_dist_from_tower
+
+        # if car is facing away from camera, green light will be to the left (less value) and we are looking for cosine
+        #so we can do acos(redx-greenx) 
+        angle_based_on_side = math.acos((ledsX['g'] - ledsX['rHigh'])/self.SIDE_LIGHT_DISTANCE)
+        angle_based_on_tail = math.asin((ledsX['rHigh'] - ledsX['b'])/self.TAIL_LIGHT_DISTANCE)
+        #sanity check that different angles are not totally off (we )
+        if abs(angle_based_on_side - angle_based_on_tail) > ANGLE_TOLERANCE:
+            raise ProcessingError("angle measured using side light and tail light are not consistent.")
+#TODO!!!!!!!!!!!!!!!!!!!!!! NEED TO CONSIDER 2 POSSIBLE SOLUTIONS TO BOTH SIN AND COS, NOT SURE HOW WE WILL DO THIS BUT WE NEED TO.
+        #now calculate the orientation by calculating the 
+        facing_camera = angle_based_on_tail #TODO
+        measuredOrientation = camera_angle + facing_camera
+
+        return (measuredX, measuredY, measuredOrientation)
+
+
+
+
+    # returns the camera calculated position of the leds
     # FOR TEST it returns a random location between 22cm and 624cm, and orientation between 0 and 3.14rad
-    def getPos(self, vehicleX, vehicleY, vehicleOrientation):
+    def identifyLEDS(self, imgFilename):
         self.status = 'processing'
 
-        # TAKING & OPENING IMAGE w/ variables
-        f = self.camera.takePhoto()
-        img = cv2.imread('Images/Full_Res/' + f, cv2.IMREAD_COLOR)
+        img = cv2.imread('Images/Full_Res/' + imgFilename, cv2.IMREAD_COLOR)
         h,w = img.shape[:2]
         # TODO add step to remove distortion
         img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -220,15 +300,15 @@ class ImgProc:
         for i in LEDs:
             print(LEDs[i],'\n')
             y,x = np.where(LEDs[i] == state[i])
-            yDiff = (max(y) - min(y))/2 + min(y)
-            xDiff = (max(x) - min(x))/2 + min(x)
-            LEDYcoords[i] = yDiff
-            LEDXcoords[i] = xDiff
+            ycenter = (max(y) - min(y))/2 + min(y)
+            xcenter = (max(x) - min(x))/2 + min(x)
+            LEDYcoords[i] = ycenter
+            LEDXcoords[i] = xcenter
 
         return LEDXcoords, LEDYcoords
 
 
-
+    ### DEBUGGING, CAN IGNORE UNREACHABLE CODE, THIS IS INTENDED TO BE RUN AS PART OF getPos
         # TO SHOW IMAGE FOR DEBUGGING ------------------------------------------
         if self.mode >= 1:
             img[:, :, 0] = colors['r'] * 180 + colors['g'] * 60 + colors['b'] * 115
