@@ -4,16 +4,17 @@ Contains all code to communicate from the Tower to the Vehicle
 Version 1.1: Updated message creation to use pickle.dumps() for special data/objects
 Version 1.2: Changed message format to be a pickled tuple in the format (opcode, data).
     Updated listen() to expect a pickled tuple from the Vehicle.
+Version 1.3: Removed nextPos request and updated import statements.
 
 Author: Scott Malonda
-Version: 1.2
+Version: 1.3
 Date: Dec 3, 2019
 """
 
 import socket
 from ImgProcessing import ImgProc
 from databaseStub import dataStub
-from towerCommon import OPCODE, Position
+from common import OPCODE, Position
 
 
 def listen(server: socket):
@@ -49,25 +50,6 @@ def getPosition(camera: ImgProc, expectedPos: Position, step, database: dataStub
     database.log(position, step)
    
     return position
-
-
-def getNext(database: dataStub, drawingID, step = 0):
-    """
-    Gets the next position in the drawing pattern from the database
-    - drawingID is the ID of the currently tracked drawing
-    - step is the stepID of the next step in the drawing
-
-    Returns a string of points in the format "step,lineID,x,y step,lineID,x,y"
-    """
-    lines = []
-    # TODO: add database access to get the drawing info
-    # TODO: Figure out what format to use.  Nested lists aren't playing nice
-    lines = database.getStep(drawingID, step)
-    
-    for i in range(0, len(lines)):
-        string = str(step)+str(lines[i][0])+","+str(lines[i][1])+","+str(lines[i][2])+" "
-            
-    return string
 
 def getDrawing(database, imageID):
     # TODO: Implement database access
@@ -110,7 +92,6 @@ while True:
             reply(server, addr, message)
 
     elif(int(data[0])==OPCODE.POSITION.value):
-        #TODO: Double check that this matches the vehicle-side message tuple format
         expectedPos = data[2]
         step = int(data[1])
         x, y, angle = getPosition(camera, expectedPos, step, database)
