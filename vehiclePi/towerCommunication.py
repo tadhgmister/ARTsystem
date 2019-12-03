@@ -3,6 +3,8 @@ Contains all code to communicate from vehicle to tower
 
 Version 1.1: Added socket methods and a placeholder server address for communicating with
     the tower.  Sync_position now returns the real position; calculated_position is ignored.
+Version 1.2: Updated sync_position() to send and expect a pickled tuple in the UDP request and
+    reply respectively.
 """
 import sqlite3
 import itertools
@@ -24,23 +26,22 @@ def sync_position(calculated_position: Position, current_step: int, client: sock
 
     Returns position given by the tower
     """
-    # First creates a bytearray with the ints we need to send, then adds the position object
-    # Doing it this way to make Tower-side parsing easier.
-    message = bytearray([OPCODE.POSITION.value, current_step])+bytearray(pickle.dumps(calculated_position))
-    client.sendto(message, server_address)
-
-    raw, server = client.recvfrom(1024)
-    # Position packets are a byte array of string data containing [opcode,x,y,facing]
-    if not(int(raw[0])==OPCODE.POSITION.value):
-        raise TypeError("Unexpected error: Received unexpected packet type {!r}".format(data[0]))
-
-    # If we got a position packet, pull the position object from the raw data
-    real_position = pickle.loads(raw[1:(len(raw)-1)])
-
-    #TODO: Calculate error using calculated_position and real_position?
     if calculated_position is None:
         # can just say car is exactly at tower, not realistic but reasonable for testing.
         calculated_position = Position(0,0)
+
+    # Position request is a tuple containing (opcode, step, Position)
+    message = pickle.dumps((OPCODE.POSITION.value, current_step, calculated_position))
+    client.sendto(message, server_address)
+
+    raw, server = client.recvfrom(1024)
+    data = pickle.loads(raw)
+    # Position packets are a tuple containing (opcode, Position)
+    if not(int(data[0])==OPCODE.POSITION.value):
+        raise TypeError("Error: Received unexpected packet type {!r}".format(data[0]))
+
+    real_position = data[1]
+
     return real_position 
 
 def get_lines_of_drawing(drawing_ID, step_ID=None):
@@ -146,19 +147,6 @@ def get_lines_of_drawing(drawing_ID, step_ID=None) -> (
 
     If step_ID is not given this will start from last recorded step in drawing.
     """
-    # FOR FUTURE USE
-    # TODO: un-comment the code and properly parse the packet for step data
-    # Request the next lines in the drawing from the Tower
-    #message = [OPCODE.NEXTPOS.value, drawing_ID, step_ID]
-    #client.sendto(bytearray(message), server_address)
-    #
-    #raw, server = client.recvfrom(1024)
-    #data = raw.decode().split(" ")
-    # Checking if the packet is an error/unexpected packet
-    #if(int(data[0])==OPCODE.ERROR.value):
-    #    raise TypeError(f"Tower-side Error: {!r}".format(raw.decode()))
-    #elif not(int(data[0])==OPCODE.POSITION.value):
-    #    raise TypeError(f"Error: Received unexpected packet type {!r}".format(data[0]))
     
     def key(item: ("step", "line", "point")):
         return item[1]
