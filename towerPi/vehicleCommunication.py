@@ -1,9 +1,13 @@
 """
 Contains all code to communicate from the Tower to the Vehicle
 
+Version 1.1: Updated message creation to use pickle.dumps() for special data/objects
+Version 1.2: Changed message format to be a pickled tuple in the format (opcode, data).
+    Updated listen() to expect a pickled tuple from the Vehicle.
+
 Author: Scott Malonda
-Version: 1.0
-Date: Nov 18, 2019
+Version: 1.2
+Date: Dec 3, 2019
 """
 
 import socket
@@ -17,12 +21,10 @@ def listen(server: socket):
     Receives a udp message and parses the data into a list of ints.
     - server is the socket that will receive the message
 
-    Returns a list of ints and the address (IP, port) of the sending socket
+    Returns a tuple message (opcode, data) and the address (IP, port) of the sending socket
     """
     raw, addr = server.recvfrom(1024)
-    data = []
-    for i in range(0, len(raw)):
-        data.append(int(raw[i]))
+    data = pickle.loads(raw)
 
     return data, addr
 
@@ -32,7 +34,7 @@ def reply(server: socket, addr, message):
     Sends a response to the client at address addr
     - server is the socket sending the response
     - addr is the address (IP, port) of the client socket
-    - message is the bytearray to be sent
+    - message is the bytes-like data to be sent (Currently using a pickled tuple)
     """
     # Created this in case we want to separate some part of the logic from the main loop
     server.sendto(message, addr)
@@ -92,38 +94,29 @@ while True:
     if(int(data[0])==OPCODE.STANDBY.value):
         tracking = False
         drawingID = 0
-        message = bytearray([OPCODE.ACK.value])
+        message = pickle.dumps((OPCODE.ACK.value))
         reply(server, addr, message)
 
     elif(int(data[0])==OPCODE.TRACK.value):
         if(drawingID!=0):
             # Error if already tracking a drawing
-            message = bytearray([OPCODE.ERROR.value])+bytearray("Already tracking a drawing".encode())
+            message = pickel.dumps((OPCODE.ERROR.value, "Already tracking a drawing"))
             reply(server, addr, message)
         else:
             imageID = data[1]
             drawingID = getDrawing(database, imageID)
             tracking = True
-            message = bytearray([OPCODE.ACK.value])
+            message = pickle.dumps((OPCODE.ACK.value))
             reply(server, addr, message)
 
     elif(int(data[0])==OPCODE.POSITION.value):
-        expectedPos = pickle.loads(data[2:(len(data)-1)])
+        #TODO: Double check that this matches the vehicle-side message tuple format
+        expectedPos = data[2]
         step = int(data[1])
         x, y, angle = getPosition(camera, expectedPos, step, database)
         position = Position(x, y, angle)
-        message = bytearray(OPCODE.POSITION.value)+bytearray(pickle.dumps(position))
+        message = pickle.dumps((OPCODE.POSITION.value, position))
         reply(server, addr, message)
-
-    elif(int(data[0])==OPCODE.NEXTPOS.value):
-        if not(tracking):
-            # Error if not tracking a drawing
-            message = bytearray(OPCODE.ERROR.value)+bytearray("No active drawing".encode())
-            reply(server, addr, message)
-        else:
-            lines = getNext(database, data[1], data[2])
-            message = bytearray(OPCODE.NEXTPOS.value)+bytearray(lines.encode())
-            reply(server, addr, message)
 
     # Clearing variable to avoid reusing data from the last message (redundant)
     data = None
