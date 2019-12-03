@@ -27,9 +27,28 @@ class ImgProc:
     SIDE_LIGHT_DISTANCE = 10
     "distance from the red center led to the side green led in cm"
     #TODO CORRECT THIS NUMBER
-    RED_LIGHT_PX_TO_DISTANCE = -1
-    "conversion of pixels apart in image to distance car is from camera in cm"
+    RED_LIGHT_CM_DISTANCE = 20
+    "distance between high and low LED in cm"
+
+    FOV_ANGLE_HEIGHT = math.radians(15.3)
+    """angle that the camera can see in the vertical
+    this can vary slightly based on plane of focus and is calculated based on properties of the lens
+    it might make more sense to collect sample data for car distance to how many pixels apart the red LEDs appear and do interpolation instead of
+    calculating it based on this and trig."""
+    CANVAS_HEIGHT_PX = 3840
+    """height of the photos taken in pixels, used to find the distance the car is from the tower"""
+
     co = {'r':0, 'g':60, 'b':115}
+
+    @classmethod
+    def convert_red_px_to_dist(cls,px_dist):
+        """returns how far away the car is from the tower in cm based on how far apart the red LEDs appear in the photo"""
+        # see FOV_angle_calculation for where the following equation comes from
+        # tan(FOV/2) = (canvas_height_cm/2) / dist_from_tower
+        # dist_from_tower = (canvas_height_cm/2)/tan(FOV/2) = (1/2tan(FOV/2)) * canvas_height_cm
+        # =  (1/2tan(FOV/2)) * canvas_height_px * (cm/px)
+        # = (canvas_height_px/2tan(FOV/2)) * (red_led_dist_cm / red_led_dist_px)
+        return cls.CANVAS_HEIGHT_PX / (2*math.tan(cls.FOV_ANGLE_HEIGHT/2)) * cls.RED_LIGHT_CM_DISTANCE / px_dist
 
     def __init__(self, debbugMODE):
         self.mode = debbugMODE
@@ -39,6 +58,7 @@ class ImgProc:
         self.camera = Camera()
 
         self.status = 'standby'
+
     def getPos(self, vehicleX, vehicleY, vehicleOrientation, *, raise_on_error=False):
         """takes a photo of the car and returns a tuple (x,y,facing) for the position as calculated by the photo
         if raise_on_error is passed as true then an error will be raised if something goes wrong, otherwise the error is logged
@@ -57,6 +77,11 @@ class ImgProc:
             print("CASE THAT IS NOT IMPLEMENTED WAS HIT", e)
             print("RETURNING CALCULATED NOT MEASURED POSITION")
             return (vehicleX, vehicleY, vehicleOrientation)
+        except Exception:
+            # if something else went wrong give full traceback
+            import traceback
+            traceback.print_exc(limit=-2)
+            return (vehicleX, vehicleY, vehicleOrientation)
 
     def getPos_internal(self, vehicleX, vehicleY, vehicleOrientation):
         """internal for getPos, this will throw an error if something is off."""
@@ -72,9 +97,9 @@ class ImgProc:
         elif 'rHigh' not in ledsX or 'rLow' not in ledsX:
             raise ProcessingError("cannot see both red leds")
         elif 'g' not in ledsX:
-            raise NotImplementedError("need to consider special case where we calculate tail light and work if close to 45 or 90")
+            raise NotImplementedError("need to consider special case where we calculate TAIL light and work if close to 45 or 90")
         elif 'b' not in ledsX:
-            raise NotImplementedError("need to consider special case where we calculate side light and work if close to 45 or 90")
+            raise NotImplementedError("need to consider special case where we calculate SIDE light and work if close to 45 or 90")
         #otherwise we have all leds to do trig on
         # ORIENTATION OF THE CAR:
         # G   R (front up)
@@ -88,22 +113,40 @@ class ImgProc:
         #the x offset is expected to be very small so if this is high we probably have an issue.
         red_light_x_offset = ledsX['rHigh'] - ledsX['rLow']
         if red_light_x_offset/red_light_pixel_dist > RED_X_TOLERANCE:
-            raise ProcessingError("red lights were more than 10% offset in x direction")
+            raise ProcessingError("red lights were more than {:.0%} offset in x direction".format(RED_X_TOLERANCE))
         
         measuredX = math.cos(camera_angle) * car_dist_from_tower
         measuredY = math.sin(camera_angle) * car_dist_from_tower
 
         # if car is facing away from camera, green light will be to the left (less value) and we are looking for cosine
         #so we can do acos(redx-greenx) 
-        angle_based_on_side = math.acos((ledsX['g'] - ledsX['rHigh'])/self.SIDE_LIGHT_DISTANCE)
-        angle_based_on_tail = math.asin((ledsX['rHigh'] - ledsX['b'])/self.TAIL_LIGHT_DISTANCE)
+        side_light_cos = (ledsX['g'] - ledsX['rHigh']) * self.SIDE_LIGHT_DISTANCE / (red_light_pixel_dist * self.RED_LIGHT_CM_DISTANCE)
+        tail_light_sin = (ledsX['b'] - ledsX['rHigh']) * self.SIDE_LIGHT_DISTANCE / (red_light_pixel_dist * self.RED_LIGHT_CM_DISTANCE)
+
+        acute_angle_from_side = math.acos(abs(side_light_cos))
+        acute_angle_from_tail = math.asin(abs(tail_light_sin))
         #sanity check that different angles are not totally off (we )
-        if abs(angle_based_on_side - angle_based_on_tail) > ANGLE_TOLERANCE:
+        if abs(acute_angle_from_side - acute_angle_from_tail) > ANGLE_TOLERANCE:
             raise ProcessingError("angle measured using side light and tail light are not consistent.")
-#TODO!!!!!!!!!!!!!!!!!!!!!! NEED TO CONSIDER 2 POSSIBLE SOLUTIONS TO BOTH SIN AND COS, NOT SURE HOW WE WILL DO THIS BUT WE NEED TO.
-        #now calculate the orientation by calculating the 
-        facing_camera = angle_based_on_tail #TODO
-        measuredOrientation = camera_angle + facing_camera
+        # calculate an average, hopefully they are pretty close so we don't have to worry about this as much.
+        ave_acute_angle = (acute_angle_from_side + acute_angle_from_tail) / 2
+        #which quandrent the car is facing is based on whether the blue and green light are to right or left of red lights
+        # the cases that need to be considered are outlined in the file LEDCameraCases.jpeg
+        if side_light_cos < 0 and tail_light_sin > 0:
+            # first quadrent, no offset
+            ange_relative_camera = ave_acute_angle
+        elif side_light_cos > 0 and tail_light_sin > 0:
+            # both lights are to the right, car is facing toward camera and to the left
+            ange_relative_camera = math.pi - ave_acute_angle
+        elif side_light_cos > 0 and tail_light_sin < 0:
+            # side light is to the right and tail light is to the left
+            # car is facing toward camera and to the left, 3rd quadrent
+            ange_relative_camera = math.pi + ave_acute_angle
+        else:
+            assert side_light_cos < 0 and tail_light_sin < 0, "tadhg messed up the quadrant cases, or we hit exactly 0 angle case"
+            ange_relative_camera = 2*math.pi - ave_acute_angle
+            
+        measuredOrientation = (camera_angle + ange_relative_camera)%(2*math.pi)
 
         return (measuredX, measuredY, measuredOrientation)
 
