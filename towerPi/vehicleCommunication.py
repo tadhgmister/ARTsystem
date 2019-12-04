@@ -53,11 +53,6 @@ def getPosition(camera: ImgProc, expectedPos: Position, step, database: dataStub
     
     return position
 
-def getDrawing(database, imageID):
-    # TODO: Implement database access
-    # Placeholder function
-    return 1
-
 
 tracking = False
 drawingID = 0
@@ -88,7 +83,6 @@ while True:
             reply(server, addr, message)
         else:
             imageID = data[1]
-            drawingID = getDrawing(database, imageID)
             tracking = True
             message = pickle.dumps((OPCODE.ACK.value))
             reply(server, addr, message)
