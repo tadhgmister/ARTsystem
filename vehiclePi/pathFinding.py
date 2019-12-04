@@ -17,7 +17,8 @@ except ImportError:
 
 # set to true below in if __name__ == "__main__"
 DEBUG = False
-
+W = 20.2
+H = 10.2
 def pol_dist(dx,dy):
     """converts (x,y) distance to polar distance (straight line distance)"""
     return abs(dx + 1j*dy) #abs on complex numbers is designed to do this.
@@ -30,6 +31,9 @@ def move_to_point(curPos: Position, targetX: float, targetY: float) -> Generator
     ignores the facing direction of target position"""
     (curx, cury, curfacing) = (curPos.x, curPos.y, curPos.facing)
     (tarx, tary) = (targetX, targetY)
+    steps_to_move = pol_dist(tarx-curx, tary-cury) // Vehicle.WHEEL_STEP_INCREMENT
+    if steps_to_move == 0:
+        return
     ### Orient the correct direction
     needed_facing = math.atan2(tary - cury, tarx - curx)
     #TODO: SHOULD CONSIDER WRAP AROUND FOR ANGLES, WON'T TURN OPTIMAL DIRECTION THIS WAY
@@ -44,7 +48,7 @@ def move_to_point(curPos: Position, targetX: float, targetY: float) -> Generator
 
     #we are now within one turn increment from the direction we need to move
     #TODO: do zig-zagging so that car tries to stay roughly on the line
-    steps_to_move = pol_dist(tarx-curx, tary-cury) // Vehicle.WHEEL_STEP_INCREMENT
+    #steps_to_move = pol_dist(tarx-curx, tary-cury) // Vehicle.WHEEL_STEP_INCREMENT
     yield from itertools.repeat(MOVE.F, int(steps_to_move))
 
     #yield MOVE.L
@@ -103,8 +107,8 @@ def collect_test_positions(lines_of_drawing):
 
 def animate_frame(finished_paths, current_path, pos: Position):
     pyplot.clf()
-    pyplot.xlim((-5, 25))
-    pyplot.ylim((-5, 25))
+    pyplot.xlim((-5, W+5))
+    pyplot.ylim((-5, H+5))
     pyplot.scatter([pos.x], [pos.y])
     pyplot.plot([pos.x, pos.moved_forward(3).x], [pos.y, pos.moved_forward(3).y])
     for idx,path in enumerate(finished_paths):

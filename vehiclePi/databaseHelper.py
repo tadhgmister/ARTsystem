@@ -243,7 +243,10 @@ def INIT_DATABASE(file="testDB.db"):
     os.remove(file)
     db = Database(file)
     db.create_tables()
-    from towerCommunication import load_points_for_drawing_MOCK
+    try:
+        from towerCommunication import load_points_for_drawing_MOCK
+    except ImportError:
+        from .towerCommunication import load_points_for_drawing_MOCK
     all_points = list(load_points_for_drawing_MOCK(1))
     [step,line,x,y] = zip(*all_points)
     pID = db.create_new_pattern(all_points, max(x), max(y))

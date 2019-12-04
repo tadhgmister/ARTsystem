@@ -568,7 +568,12 @@ def floodAlgorithm(data, start_index, get_adjs):
 
 if __name__ == "__main__":
     x = ImgProc(False)
-    steps = x.makePattern("Camera/ART_System/Images/Full_Res/20x18.jpg")
+    steps = x.makePattern("Camera/ART_System/Images/eye.jpg")
+    from vehiclePi.databaseHelper import INIT_DATABASE
+    from vehiclePi.common import Position
+    db = INIT_DATABASE()
+    p = db.create_new_pattern(steps, 202, 102)
+    d = db.create_drawing(p, Position(0, 10.2), Position(20.2, 0))
     from pprint import pprint
     pprint(steps)
     [s,lines,x,y] = zip(*steps)
