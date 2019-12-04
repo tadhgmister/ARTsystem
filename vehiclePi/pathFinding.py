@@ -5,9 +5,14 @@ from matplotlib import pyplot
 import math
 import itertools
 from typing import Generator, Iterator, Tuple
-from common import Position, MOVE
-from vehicleController import Controller as Vehicle
-import towerCommunication
+try:
+    from common import Position, MOVE
+    from vehicleController import Controller as Vehicle
+    import towerCommunication
+except ImportError:
+    from .common import Position, MOVE
+    from .vehicleController import Controller as Vehicle
+    from . import towerCommunication
 
 # set to true below in if __name__ == "__main__"
 DEBUG = False

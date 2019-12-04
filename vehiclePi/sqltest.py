@@ -1,7 +1,10 @@
 ##import mysql.connector
 import sqlite3
 from pprint import pprint
-import towerCommunication
+try:
+    import towerCommunication
+except ImportError:
+    from . import towerCommunication
 
 CREATE_TABLE_COMMANDS = ["""
 CREATE TABLE IF NOT EXISTS patterns (

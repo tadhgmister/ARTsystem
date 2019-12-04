@@ -10,7 +10,10 @@ import sqlite3
 import itertools
 import socket
 import pickle
-from common import Position, OPCODE
+try:
+    from common import Position, OPCODE
+except ImportError:
+    from .common import Position, OPCODE
 
 from typing import Generator, Tuple, Iterator
 

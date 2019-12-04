@@ -18,7 +18,10 @@ Date: Dec 2, 2019
 
 import serial
 from time import sleep
-from common import MOVE
+try:
+    from common import MOVE
+except ImportError:
+    from .common import MOVE
 
 def send_moves(arduinoPort = '/dev/ttyUSB0', moves):
     """

@@ -6,8 +6,12 @@ Version 1.1: Added a socket to the class for UDP communication
 """
 import typing
 import socket
-from common import Position, MOVE
-from towerCommunication import sync_position
+try:
+    from common import Position, MOVE
+    from towerCommunication import sync_position
+except ImportError:
+    from .common import Position, MOVE
+    from .towerCommunication import sync_position
 
 class Controller:
     """
@@ -25,9 +29,9 @@ contains methods to move the motors in order to move the car."""
     # socket to be used for UDP communication with the tower.
     sock: Socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     
-    def __init__(self):
+    def __init__(self, initial_position=None):
         # should this take position as input or do we even know where the car is at this point?
-        NotImplemented
+        self.position = initial_position
 
     def correct_actual_position(self, current_step: int) -> None:
         """

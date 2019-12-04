@@ -3,8 +3,10 @@ import contextlib
 import datetime
 import collections
 import typing
-
-from common import Position
+try:
+    from common import Position
+except ImportError:
+    from .common import Position
 
 class _Ref:
     """foreign key ref to another table"""
