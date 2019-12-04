@@ -33,13 +33,16 @@ void loop() {
       // Arduino uses ASCII values to represent ints
       switch(instruction) {
         case 48: 
-          Serial.println("Stepping forward");  // ASCII 48 = int 0
+          Serial.println("Forward");  // ASCII 48 = int 0
+          break;
+        case 49:
+          Serial.println("Backward");
           break;
         case 50: 
-          Serial.println("Turning right");     // ASCII 50 = int 2
+          Serial.println("Right");     // ASCII 50 = int 2
           break;
         case 51: 
-          Serial.println("Turning left");      // ASCII 51 = int 3
+          Serial.println("Left");      // ASCII 51 = int 3
           break;
         case 10: 
           Serial.println("Serial buffer empty"); // ASCII 10 is used as the end character 
