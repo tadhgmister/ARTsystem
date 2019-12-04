@@ -103,8 +103,8 @@ def collect_test_positions(lines_of_drawing):
 
 def animate_frame(finished_paths, current_path, pos: Position):
     pyplot.clf()
-    pyplot.xlim((-10, 60))
-    pyplot.ylim((-10, 60))
+    pyplot.xlim((-5, 25))
+    pyplot.ylim((-5, 25))
     pyplot.scatter([pos.x], [pos.y])
     pyplot.plot([pos.x, pos.moved_forward(3).x], [pos.y, pos.moved_forward(3).y])
     for idx,path in enumerate(finished_paths):
@@ -119,7 +119,7 @@ if __name__ == "__main__":
     deviation = 0
     tolerance = 2*Vehicle.WHEEL_STEP_INCREMENT #mm allowed deviation
     print("RUNNING TEST")
-    lines = towerCommunication.get_lines_of_drawing(1)
+    lines = towerCommunication.get_lines_of_drawing(2)
 
     ### haha lol, I accidentally totally changed the format of collect_test_positions so this test code is completely broken, oops.
     ### oh well, the 

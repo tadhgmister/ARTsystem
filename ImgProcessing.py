@@ -440,7 +440,7 @@ class ImgProc:
         h, w = raw_img.shape[:2]
         
         img = np.zeros((h,w))
-        img[raw_img[:,:] < 255] = 1
+        img[raw_img[:,:] < 230] = 1
         [Ys, Xs] = np.meshgrid(np.arange(1, h-1), np.arange(1, w-1))
         graph = np.zeros((h,w))
         for xoff, yoff in itertools.product([-1,0,1], repeat=2):
@@ -475,16 +475,36 @@ class ImgProc:
             # print(graph[y,x])
             graph[y,x] = 0 #clear all points along this line
             # print("!", graph == 1)
-        print("after",graph,  np.any(graph == 1),sep="\n")
+        #print("after",graph,  np.any(graph == 1),sep="\n")
 
         assert np.sum(graph) == 0, "not all points were taken by flood algorithm"
+
+        points_iter = []
+        step = 0
+        SMOOTHENING = 0.5
+        for line_idx, path in enumerate(all_lines):
+            n_ps = len(path)
+            [x,y] = zip(*path)
+            sample_points = np.linspace(0, n_ps, 3*len(path))
+            if n_ps > 3:
+                y_fitted = UnivariateSpline(range(n_ps), y, s=SMOOTHENING)(sample_points)
+                x_fitted = UnivariateSpline(range(n_ps), x, s=SMOOTHENING)(sample_points)
+            else:
+                y_fitted = y
+                x_fitted = x
+            
+            for (xp, yp) in zip(y_fitted, x_fitted):
+                points_iter.append((step, line_idx, xp, yp))
+                step += 1
+        return points_iter
+
         # plt.imshow(edges, cmap='hsv', interpolation='bicubic')
         # plt.show()
-        plt.subplot(121),plt.imshow(img,cmap = 'gray')
-        plt.title('Original Image'), plt.xticks([]), plt.yticks([])
-        # plt.subplot(122),plt.imshow(edges,cmap = 'gray')
-        # plt.title('Edge Image'), plt.xticks([]), plt.yticks([])
-        plt.show()
+        # plt.subplot(121),plt.imshow(img,cmap = 'gray')
+        # plt.title('Original Image'), plt.xticks([]), plt.yticks([])
+        # # plt.subplot(122),plt.imshow(edges,cmap = 'gray')
+        # # plt.title('Edge Image'), plt.xticks([]), plt.yticks([])
+        # plt.show()
 
 
 
@@ -548,4 +568,9 @@ def floodAlgorithm(data, start_index, get_adjs):
 
 if __name__ == "__main__":
     x = ImgProc(False)
-    x.makePattern("/Users/tadhgmcdonald-jensen/Documents/SYSC3010/Project/Camera/ART_System/Images/Full_Res/20x18.jpg")
+    steps = x.makePattern("Camera/ART_System/Images/Full_Res/20x18.jpg")
+    from pprint import pprint
+    pprint(steps)
+    [s,lines,x,y] = zip(*steps)
+    plt.plot(x,y)
+    plt.show()
