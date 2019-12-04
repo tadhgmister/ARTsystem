@@ -15,8 +15,9 @@ except ImportError:
 
 class Controller:
     """
-This class maintains the position and orientation of the vehicle and
-contains methods to move the motors in order to move the car."""
+This class maintains the position and orientation of the vehicle 
+Note that this class does not actually send commands to the arduino to move the car
+(just because of how the project got developed in segments) so use serialCommunication for that."""
     #TODO: get actual increments for these.
     WHEEL_STEP_INCREMENT: typing.ClassVar[float] = 0.5
     "cm wheel moves per step."
@@ -44,13 +45,10 @@ contains methods to move the motors in order to move the car."""
     def move(self, instruction: MOVE):
         self._fail_if_not_initialized()
         if instruction is MOVE.F:
-            #TODO: send arduino command
             self.position = self.position.moved_forward(self.WHEEL_STEP_INCREMENT)
         elif instruction is MOVE.R:
-            #TODO: send arduino command
             self.position = self.position.turned( - self.WHEEL_TURN_INCREMENT)
         elif instruction is MOVE.L:
-            #TODO: send arduino command
             self.position = self.position.turned(self.WHEEL_TURN_INCREMENT)
         elif instruction in (MOVE.CHALK_DOWN, MOVE.CHALK_UP):
             self.set_drawing(instruction == MOVE.CHALK_DOWN)
@@ -91,7 +89,6 @@ contains methods to move the motors in order to move the car."""
         """sets the chalk to either be drawing or not drawing"""
         if drawing == this.drawing:
             return #can skip if same state.
-        #TODO: send chalk command to arduino
         this.drawing = drawing
 
 

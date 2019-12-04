@@ -8,6 +8,7 @@ def draw(drawing_id, initial_position = None):
     from .common import Position
     from .pathFinding import move_along_line
     from .towerCommunication import get_lines_of_drawing
+    from .serialCommunication import send_moves_enum
 
     print("DRAWING", drawing_id)
 
@@ -21,5 +22,5 @@ def draw(drawing_id, initial_position = None):
 
     for line_id, points_iter in lines_iter:
         print("on line", line_id)
-        move_along_line(vehicle, points_iter)
-        #TODO: do additional correction here?
+        instruction_batch = list(move_along_line(vehicle, points_iter))
+        send_moves_enum(instruction_batch)

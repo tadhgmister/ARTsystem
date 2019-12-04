@@ -57,7 +57,7 @@ def move_along_line(controller: Vehicle, iter_pos: Iterator[Tuple[int,Tuple[floa
     for step, (tarx, tary) in iter_pos:
         for instruction in move_to_point(controller.position, tarx, tary):
             controller.move(instruction)
-            yield controller.position
+            yield instruction
         if not got_to_first_point:
             got_to_first_point = True
             yield MOVE.CHALK_DOWN
@@ -75,17 +75,18 @@ def collect_test_positions(lines_of_drawing):
     def positionToTuple(pos: Position):
         return (pos.x, pos.y)
     NaN = float("nan")
-    controller = Vehicle()
-    controller.correct_actual_position(None)
+    controller = Vehicle(Position(0,0))
+    #controller.correct_actual_position(None)
     for (lineid, line) in lines_of_drawing:
-        yield map(positionToTuple, move_along_line(controller, line))
+        # we ignore the instruction in the loop here, just after each iteration we just read the controller's position.
+        yield [(controller.position.x, controller.position.y) for inst in move_along_line(controller, line)]
 
 if __name__ == "__main__":
     DEBUG = True
     deviation = 0
     tolerance = 2*Vehicle.WHEEL_STEP_INCREMENT #mm allowed deviation
     print("RUNNING TEST")
-    lines = towerCommunication.get_lines_of_drawing(0)
+    lines = towerCommunication.get_lines_of_drawing(1)
     for idx,shape in enumerate(collect_test_positions(lines)):
         [x,y] = zip(*shape)
         
@@ -95,7 +96,7 @@ if __name__ == "__main__":
         import sys
         print(f"FAIL: algorithm results in {deviation/Vehicle.WHEEL_STEP_INCREMENT:.1%} of the step increment", file=sys.stderr)
     # need to get new iterator since other one is exausted.
-    lines = towerCommunication.get_lines_of_drawing(0)
+    lines = towerCommunication.get_lines_of_drawing(1)
     for (lineID, line) in lines:
         [x,y] = zip(*map(lambda x:x[1], line))
         pyplot.plot(x,y, label="actual")

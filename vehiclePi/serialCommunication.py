@@ -18,12 +18,18 @@ Date: Dec 2, 2019
 
 import serial
 from time import sleep
+import typing
 try:
     from common import MOVE
 except ImportError:
     from .common import MOVE
 
-def send_moves(arduinoPort = '/dev/ttyUSB0', moves):
+
+def send_moves_enum(list_of_instructions: typing.List[MOVE]):
+    moves = [inst.value for inst in list_of_instructions]
+    send_moves(moves = moves)
+
+def send_moves(arduinoPort = '/dev/ttyUSB0', moves = []):
     """
     Sends a list of movement instructions to the vehicle Arduino via USB serial
     connection.
