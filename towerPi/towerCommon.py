@@ -1,21 +1,20 @@
 from __future__ import annotations
-import math
 from enum import Enum
 
-class MOVE(Enum):
-    F = "Forward" #both wheels forward
-    R = "Turn right in place" #left wheel forward, right wheel back
-    L = "Turn left in place" #right wheel forward, left wheel back
-    FR= "turn right moving forward" #only left wheel forward
-    FL= "turn left moving forward" #only right wheel forward
-    
-    B = "backwards" #both wheels backward
-    BR = "backwards right" #left wheel backwards
-    BL = "backwards left" #right wheel backwards
-
+class OPCODE(Enum):
+    """
+    The int values of all expected packet types.
+    """
+    STANDBY = 0
+    CALIBRATE = 1
+    TRACK = 2
+    POSITION = 3
+    NEXTPOS = 4
+    ACK = 5
+    ERROR = 6
 
 class Position:
-    """position of the car"""
+    """position of the car - coordinates and facing direction"""
     __slots__ = ["x","y","facing"]
     x: float
     "x position of car relative to tower in mm"
