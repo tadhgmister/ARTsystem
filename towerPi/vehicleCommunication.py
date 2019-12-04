@@ -90,8 +90,7 @@ while True:
     elif(int(data[0])==OPCODE.POSITION.value):
         expectedPos = data[2]
         step = int(data[1])
-        x, y, angle = getPosition(camera, expectedPos, step, database)
-        position = Position(x, y, angle)
+        position = getPosition(camera, expectedPos, step, database)
         message = pickle.dumps((OPCODE.POSITION.value, position))
         reply(server, addr, message)
 
