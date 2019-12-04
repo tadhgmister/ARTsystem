@@ -14,6 +14,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
 from scipy.interpolate import UnivariateSpline
+import itertools
+from pprint import pprint
+
+def find_first_index(bool_array):
+    """returns a tuple index (how ever many dimensions the matrix has) for the first true value in the array
+    if all values are false it returns None"""
+    lens = (range(d) for d in bool_array.shape)
+    for loc in itertools.product(*lens):
+        if bool_array[loc]:
+            return loc
+
 
 class ProcessingError(Exception):
     pass
@@ -424,28 +435,55 @@ class ImgProc:
 
     def makePattern(self, f):
         #img = cv2.imread('Images/Full_Res/' + f, cv2.IMREAD_COLOR)
-        img = cv2.imread('Images/Full_Res/' + f, cv2.IMREAD_GRAYSCALE)
-        h, w = img.shape[:2]
-        edges = cv2.Canny(img, 100, 200)
-        # kernel = np.ones((2, 2), np.uint8)
-        # edges = cv2.erode(edges, kernel)
+        raw_img = cv2.imread(f, cv2.IMREAD_GRAYSCALE)
+        #print("RAW", raw_img)
+        h, w = raw_img.shape[:2]
+        
+        img = np.zeros((h,w))
+        img[raw_img[:,:] < 255] = 1
+        [Ys, Xs] = np.meshgrid(np.arange(1, h-1), np.arange(1, w-1))
+        graph = np.zeros((h,w))
+        for xoff, yoff in itertools.product([-1,0,1], repeat=2):
+            if xoff == 0 and yoff == 0:
+                continue
+            graph[Ys,Xs] += img[Ys+yoff,Xs+xoff]
 
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        gray = np.float32(gray)
-        corners = cv2.cornerHarris(gray,2,3,0.04)
-        #corners = cv2.dilate(corners, None)
-        img[corners > 0.01 * corners.max()] = [0, 0, 255]
-        print(img)
-        print(corners)
-        print(edges)
+        # clear any spaces that are not filled themselves.
+        graph[img == 0] = 0
 
+        def get_adjs(data, elem):
+            [y,x] = elem
+            for xoff, yoff in itertools.product([-1,0,1], repeat=2):
+                idx = (y+yoff, x+xoff)
+                if data[idx]:
+                    yield idx
+        # keep checking for remaining corners, break when there aren't any left.
+        [Yidxs, Xidxs] = np.meshgrid(np.arange(0,h), np.arange(0,w))
+        all_lines = []
+        print("before",graph, sep="\n")
+        while True:
+            next_corner = find_first_index(graph == 1)
+            if next_corner is None:
+                # we are out of corners, break this loop
+                break
+            # convert to 2d position
+            
+            points_in_line = list(floodAlgorithm(graph, next_corner, get_adjs))
+            all_lines.append(points_in_line)
+            #pprint(points_in_line)
+            [y,x] = zip(*points_in_line)
+            # print(graph[y,x])
+            graph[y,x] = 0 #clear all points along this line
+            # print("!", graph == 1)
+        print("after",graph,  np.any(graph == 1),sep="\n")
+
+        assert np.sum(graph) == 0, "not all points were taken by flood algorithm"
         # plt.imshow(edges, cmap='hsv', interpolation='bicubic')
         # plt.show()
-
         plt.subplot(121),plt.imshow(img,cmap = 'gray')
         plt.title('Original Image'), plt.xticks([]), plt.yticks([])
-        plt.subplot(122),plt.imshow(edges,cmap = 'gray')
-        plt.title('Edge Image'), plt.xticks([]), plt.yticks([])
+        # plt.subplot(122),plt.imshow(edges,cmap = 'gray')
+        # plt.title('Edge Image'), plt.xticks([]), plt.yticks([])
         plt.show()
 
 
@@ -490,3 +528,24 @@ class ImgProc:
 
 
 # class LED():
+
+
+
+def floodAlgorithm(data, start_index, get_adjs):
+    visited = set()
+    to_visit = set((start_index,))
+    def getNext():
+        if to_visit: return to_visit.pop()
+        else: return None
+    for elem in iter(getNext, None):
+        visited.add(elem)
+        yield elem
+        adjs = get_adjs(data, elem)
+        new_elems = set(adjs).difference(visited)
+        to_visit.update(new_elems)
+
+
+
+if __name__ == "__main__":
+    x = ImgProc(False)
+    x.makePattern("/Users/tadhgmcdonald-jensen/Documents/SYSC3010/Project/Camera/ART_System/Images/Full_Res/20x18.jpg")
