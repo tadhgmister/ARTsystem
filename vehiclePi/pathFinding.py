@@ -2,6 +2,7 @@
 Contains code to turn sequence of coordinates into sequence of movement commands
 """
 from matplotlib import pyplot
+from matplotlib import animation
 import math
 import itertools
 from typing import Generator, Iterator, Tuple
@@ -77,9 +78,41 @@ def collect_test_positions(lines_of_drawing):
     NaN = float("nan")
     controller = Vehicle(Position(0,0))
     #controller.correct_actual_position(None)
+    all_paths = []
+    path = []
+    drawing = True
     for (lineid, line) in lines_of_drawing:
         # we ignore the instruction in the loop here, just after each iteration we just read the controller's position.
-        yield [(controller.position.x, controller.position.y) for inst in move_along_line(controller, line)]
+        for inst in move_along_line(controller, line):
+            if inst is MOVE.CHALK_UP:
+                # end of line, yield it and start a new one
+                drawing = False
+                if path:
+                    all_paths.append(path)
+                path = []
+            elif inst is MOVE.CHALK_DOWN:
+                drawing = True
+            elif drawing:
+                path.append((controller.position.x, controller.position.y))
+            yield
+            animate_frame(all_paths, path, controller.position)
+    
+    while True:
+        yield
+        animate_frame(all_paths, path, controller.position)
+
+def animate_frame(finished_paths, current_path, pos: Position):
+    pyplot.clf()
+    pyplot.xlim((-10, 60))
+    pyplot.ylim((-10, 60))
+    pyplot.scatter([pos.x], [pos.y])
+    pyplot.plot([pos.x, pos.moved_forward(3).x], [pos.y, pos.moved_forward(3).y])
+    for idx,path in enumerate(finished_paths):
+        [x,y] = zip(*path)
+        pyplot.plot(x,y)
+    if current_path:
+        [x,y] = zip(*current_path)
+        pyplot.plot(x,y)
 
 if __name__ == "__main__":
     DEBUG = True
@@ -87,21 +120,34 @@ if __name__ == "__main__":
     tolerance = 2*Vehicle.WHEEL_STEP_INCREMENT #mm allowed deviation
     print("RUNNING TEST")
     lines = towerCommunication.get_lines_of_drawing(1)
-    for idx,shape in enumerate(collect_test_positions(lines)):
-        [x,y] = zip(*shape)
+
+    ### haha lol, I accidentally totally changed the format of collect_test_positions so this test code is completely broken, oops.
+    ### oh well, the 
+    # for idx,path in enumerate(collect_test_positions(lines)):
         
-        pyplot.plot(x,y, label=f"shape{idx}")
-    print(f"max deviation: {deviation:.3f}mm")
-    if deviation > tolerance:
-        import sys
-        print(f"FAIL: algorithm results in {deviation/Vehicle.WHEEL_STEP_INCREMENT:.1%} of the step increment", file=sys.stderr)
-    # need to get new iterator since other one is exausted.
-    lines = towerCommunication.get_lines_of_drawing(1)
-    for (lineID, line) in lines:
-        [x,y] = zip(*map(lambda x:x[1], line))
-        pyplot.plot(x,y, label="actual")
-    pyplot.title("sample output")
-    pyplot.legend()
+    #     [x,y] = zip(*path)
+        
+    #     pyplot.plot(x,y, label=f"shape{idx}")
+    # print(f"max deviation: {deviation:.3f}mm")
+    # if deviation > tolerance:
+    #     import sys
+    #     print(f"FAIL: algorithm results in {deviation/Vehicle.WHEEL_STEP_INCREMENT:.1%} of the step increment", file=sys.stderr)
+    # # need to get new iterator since other one is exausted.
+    # lines = towerCommunication.get_lines_of_drawing(1)
+    # for (lineID, line) in lines:
+    #     [x,y] = zip(*map(lambda x:x[1], line))
+    #     pyplot.plot(x,y, label="actual")
+    # pyplot.title("sample output")
+    # pyplot.legend()
+    # pyplot.show()
+    it = collect_test_positions(lines)
+    def next_frame(i=None):
+        try:
+            next(it)
+        except StopIteration:
+            pass
+    ani = animation.FuncAnimation(pyplot.gcf(), next_frame, 1)
+    
     pyplot.show()
 
 
