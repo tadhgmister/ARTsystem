@@ -1,19 +1,3 @@
-/* Code for serial communication between an Arduino and Pi
-* Upon receiving a message, the Arduino will activate the motor controls for the instruction,
-* wait for a few seconds,
-* then send a singe byte serial message saying it's ready for the next message.
-* 
-* Version 1.1: added switch statement to avoid an avalanche of "if()"s
-* Version 1.2: minor updates, initialized readyToMove to 'true' to avoid duplicate 
-*   print statements11qqqq
-* Version 1.3: Updated Print Commands to be motor commands
-* 
-* Author:  Scott Malonda & Jonas Hurlen
-* Version 1.3
-* Date: Nov 16, 2019
-*/
-
-
 #include <Stepper.h>
 #include <AccelStepper.h>
 
