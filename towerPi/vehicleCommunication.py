@@ -46,9 +46,10 @@ def getPosition(camera: ImgProc, expectedPos: Position, step, database: dataStub
 
     Returns the x,y coordinates of the vehicle and its angle from the positive x axis
     """
-    position = camera.getPos(expectedPos) # Gets the position from an ImgProc object
+    #position = camera.getPos(expectedPos) # Gets the position from an ImgProc object
     database.log(position, step)
-   
+    position = expectedPos
+    
     return position
 
 def getDrawing(database, imageID):
