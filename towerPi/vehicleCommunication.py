@@ -12,6 +12,7 @@ Date: Dec 3, 2019
 """
 
 import socket
+import pickle
 from ImgProcessing import ImgProc
 from databaseStub import dataStub
 from common import OPCODE, Position
