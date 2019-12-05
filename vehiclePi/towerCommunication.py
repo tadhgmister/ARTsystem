@@ -17,7 +17,7 @@ except ImportError:
 
 from typing import Generator, Tuple, Iterator
 
-server_address = ('localhost', 1000)
+server_address = ('192.168.2.2', 10000)
     
 def sync_position(calculated_position: Position, current_step: int, client: socket.socket) -> Position:
     """asks tower to calculate exact position of the vehicle
@@ -36,7 +36,7 @@ def sync_position(calculated_position: Position, current_step: int, client: sock
     # Position request is a tuple containing (opcode, step, Position)
     message = pickle.dumps((OPCODE.POSITION.value, current_step, calculated_position))
     client.sendto(message, server_address)
-
+    client.settimeout(2)
     raw, server = client.recvfrom(1024)
     data = pickle.loads(raw)
     # Position packets are a tuple containing (opcode, Position)

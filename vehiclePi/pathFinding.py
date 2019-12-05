@@ -17,8 +17,7 @@ except ImportError:
 
 # set to true below in if __name__ == "__main__"
 DEBUG = False
-W = 20.2
-H = 10.2
+
 def pol_dist(dx,dy):
     """converts (x,y) distance to polar distance (straight line distance)"""
     return abs(dx + 1j*dy) #abs on complex numbers is designed to do this.
@@ -31,6 +30,7 @@ def move_to_point(curPos: Position, targetX: float, targetY: float) -> Generator
     ignores the facing direction of target position"""
     (curx, cury, curfacing) = (curPos.x, curPos.y, curPos.facing)
     (tarx, tary) = (targetX, targetY)
+    
     steps_to_move = pol_dist(tarx-curx, tary-cury) // Vehicle.WHEEL_STEP_INCREMENT
     if steps_to_move == 0:
         return
@@ -48,7 +48,6 @@ def move_to_point(curPos: Position, targetX: float, targetY: float) -> Generator
 
     #we are now within one turn increment from the direction we need to move
     #TODO: do zig-zagging so that car tries to stay roughly on the line
-    #steps_to_move = pol_dist(tarx-curx, tary-cury) // Vehicle.WHEEL_STEP_INCREMENT
     yield from itertools.repeat(MOVE.F, int(steps_to_move))
 
     #yield MOVE.L
@@ -85,6 +84,8 @@ def collect_test_positions(lines_of_drawing):
     all_paths = []
     path = []
     drawing = True
+    STEPS_TO_CORRECT = 50
+    correction_counter = 0
     for (lineid, line) in lines_of_drawing:
         # we ignore the instruction in the loop here, just after each iteration we just read the controller's position.
         for inst in move_along_line(controller, line):
@@ -100,15 +101,19 @@ def collect_test_positions(lines_of_drawing):
                 path.append((controller.position.x, controller.position.y))
             yield
             animate_frame(all_paths, path, controller.position)
-    
+            correction_counter += 1
+            if correction_counter > STEPS_TO_CORRECT:
+                print("correcting position", controller.position.x, controller.position.y)
+                correction_counter = 0
+                controller.correct_actual_position(0)
     while True:
         yield
         animate_frame(all_paths, path, controller.position)
 
 def animate_frame(finished_paths, current_path, pos: Position):
     pyplot.clf()
-    pyplot.xlim((-5, W+5))
-    pyplot.ylim((-5, H+5))
+    pyplot.xlim((-5, 25))
+    pyplot.ylim((-5, 25))
     pyplot.scatter([pos.x], [pos.y])
     pyplot.plot([pos.x, pos.moved_forward(3).x], [pos.y, pos.moved_forward(3).y])
     for idx,path in enumerate(finished_paths):

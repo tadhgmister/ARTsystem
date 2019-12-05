@@ -40,7 +40,10 @@ Note that this class does not actually send commands to the arduino to move the 
         this will make a call to the tower and block all operations until tower returns with answer
         it will also send the current location (calculated based on ideal conditions) for logging purposes
         """
-        self.position = sync_position(self.position, current_step, self.sock)
+        try:
+            self.position = sync_position(self.position, current_step, self.sock)
+        except Exception as e:
+            print("got error", e)
         
     def move(self, instruction: MOVE):
         self._fail_if_not_initialized()
