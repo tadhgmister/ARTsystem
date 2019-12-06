@@ -16,11 +16,11 @@ _anglePosition = 90
 """
 Initializes the GPIO for the motor
 """
-def motorInit:
+def motorInit():
     #Pin 11 set up for GPIO control
     GPIO.setmode(GPIO.BOARD)
     GPIO.setup(11,GPIO.OUT)
-    
+    global pwm
     pwm = GPIO.PWM(11,50)
     pwm.start(dc)
 

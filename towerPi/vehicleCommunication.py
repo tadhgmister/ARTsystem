@@ -12,11 +12,13 @@ Date: Dec 3, 2019
 """
 
 import socket
-import pickle
-from ImgProcessing import ImgProc
+#from ImgProcessing import ImgProc
 from databaseStub import dataStub
 from common import OPCODE, Position
+import ServoFunctions
+import pickle
 
+from CameraBoundary import Camera
 
 def listen(server: socket):
     """
@@ -41,29 +43,44 @@ def reply(server: socket, addr, message):
     # Created this in case we want to separate some part of the logic from the main loop
     server.sendto(message, addr)
 
-def getPosition(camera: ImgProc, expectedPos: Position, step, database: dataStub):
+def getPosition(expectedPos: Position, step, database: dataStub, cam):
     """
     Gets the position of the vehicle from the camera in the format (X, Y, Angle)
 
     Returns the x,y coordinates of the vehicle and its angle from the positive x axis
     """
-    #position = camera.getPos(expectedPos) # Gets the position from an ImgProc object
-    position = expectedPos
-    database.log(position, step)
     
-    return position
+    #position2 = camera.getPos(expectedPos) # Gets the position from an ImgProc object
+    
+    position = expectedPos
+    ServoFunctions.setAngle(position.facing)
+    filee = cam.takePhoto()
+    
+    newPos = Position((position.x + 0.5), (position.y + 0.5), position.facing)
+    print("POS", position, step)
+    #print("POS2", position2, step)
+    return newPos
 
+def getDrawing(database, imageID):
+    # TODO: Implement database access
+    # Placeholder function
+    return 1
+
+
+cam = Camera('/home/pi/Desktop/towerPi/img')
 
 tracking = False
 drawingID = 0
 # Setting up the UDP server that we're gonna use
-serverIP = 'localhost'
-serverPort = 1000
+serverIP = '0.0.0.0'
+serverPort = 10000
 server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 server.bind((serverIP, serverPort))
 # Creating the camera and database objects
-camera = ImgProc()
+#camera = ImgProc()
 database = dataStub()
+ServoFunctions.motorInit()
+
 
 while True:
     # Blocks while listening for a message.  Once received it identifies the request type,
@@ -83,6 +100,7 @@ while True:
             reply(server, addr, message)
         else:
             imageID = data[1]
+            drawingID = getDrawing(database, imageID)
             tracking = True
             message = pickle.dumps((OPCODE.ACK.value))
             reply(server, addr, message)
@@ -90,7 +108,7 @@ while True:
     elif(int(data[0])==OPCODE.POSITION.value):
         expectedPos = data[2]
         step = int(data[1])
-        position = getPosition(camera, expectedPos, step, database)
+        position = getPosition(expectedPos, step, database, cam)
         message = pickle.dumps((OPCODE.POSITION.value, position))
         reply(server, addr, message)
 
